@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from matplotlib.animation import FuncAnimation
 
+# 1.1 Vibrating string
 class String:
     def __init__(self, N, L, c=1, dt=0.001):
         self.N = N
@@ -55,6 +57,85 @@ class String:
         plt.ioff()
         plt.show()
 
+
+# 1.2 The Time Dependent Diffusion Equation
+class Twod:
+    def __init__(self, N, L, dt=0.001, D=1):
+        self.N = N
+        self.L = L
+        self.dx = L / N
+        self.dt = dt
+        self.D = D
+
+        # assert to check stability
+        assert (4 * self.dt  / self.dx ** 2) > 1, "Unstable"
+
+        # discretized points
+        self.x = np.linspace(0, L, N)
+        self.y = np.linspace(0, L, N)
+        self.t = 0
+
+        # empty 2d array for the 2d time dependent thing
+        self.c = np.zeros((N, N))
+
+        # boundary starting conditions: c(x, y=1;t) = 1 and c(x, y=0;t) = 0
+        for i in range(0, N):
+            self.c[N-1, i] = 1
+
+        # copy for the next time step
+        self.c_next = np.copy(self.c)
+
+    def step(self):
+        for x in range(0, self.N):
+            for y in range(1, self.N - 1):
+                xmin1 = (x - 1) % self.N
+                xplus1 = (x + 1) % self.N
+                # Fixed indexing: self.c[y, x] instead of self.c[x, y]
+                self.c_next[y, x] = self.c[y, x] + self.dt * self.D / self.dx ** 2 * \
+                    (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] + self.c[y - 1, x] - 4 * self.c[y, x])
+
+        # update time step values
+        self.c = np.copy(self.c_next)  # Added np.copy() to prevent reference issues
+
+        self.t += self.dt
+
+    def plot_3d(self):
+        fig = plt.figure(figsize=(8, 6))
+        ax = fig.add_subplot(111, projection='3d')
+
+        X, Y = np.meshgrid(self.x, self.y)
+        ax.plot_surface(X, Y, self.c, cmap='viridis')
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Concentration')
+        ax.set_title(f"Time Step: {self.t:.3f}")
+
+        plt.show()
+
+    def animate(self, num_frames=200, interval=50):
+        fig, ax = plt.subplots()
+        X, Y = np.meshgrid(self.x, self.y)
+
+        def init():
+            ax.clear()
+            return [ax.pcolormesh(X, Y, self.c, cmap='viridis')]
+
+        def update(frame):
+            self.step()
+            ax.clear()
+            mesh = ax.pcolormesh(X, Y, self.c, cmap='viridis')
+            ax.set_title(f'Time: {self.t:.3f}')
+            return [mesh]
+
+        anim = FuncAnimation(fig, update, frames=num_frames,
+                           init_func=init, interval=interval,
+                           blit=True)
+        plt.colorbar(ax.pcolormesh(X, Y, self.c, cmap='viridis'))
+        plt.show()
+
+
 if __name__ == "__main__":
-    wave = String(N=100, L=1.0)
-    wave.simulate(steps=500, plot_interval=10)
+    # Example usage:
+    diff = Twod(N=50, L=1.0)
+    diff.animate(num_frames=200, interval=100)
