@@ -60,13 +60,14 @@ class String:
         plt.ylabel('y')
 
         def update(frame):
-            self.step()
-            line.set_ydata(self.y)
-            return line
-        ani = animation.FuncAnimation(fig, func=update, frames=40, interval=30)
+            for step in range(steps):
+                self.step()
+                line.set_ydata(self.y)
+                return line
+        ani = animation.FuncAnimation(fig, func=update, frames=steps, interval=20, repeat=False)
         ani.save(filename="ffmpeg_example.mkv", writer="ffmpeg")
         plt.show()
 
 if __name__ == "__main__":
     wave = String(N=100, L=1.0, initial_condition= 3)
-    wave.simulate(steps=50)
+    wave.simulate(steps=500)
