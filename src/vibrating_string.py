@@ -80,7 +80,7 @@ class Twod:
         self.dt = dt
         self.D = D
 
-        # assert to check stability (CFL condition for diffusion)
+        # assert to check stability
         assert (4 * self.D * self.dt / self.dx ** 2) <= 1, "Unstable: dt too large for given dx"
 
         # discretized points
@@ -105,7 +105,7 @@ class Twod:
 
         c_next[self.N-1, :] = 1
 
-        # Update interior points
+        # Update all point using the diffusion equation as stated in the assignment
         for x in range(0, self.N):
             for y in range(1, self.N - 1):  # Skip boundary rows
                 xmin1 = (x - 1) % self.N
@@ -127,7 +127,7 @@ class Twod:
                        origin='lower',
                        cmap='viridis',
                        aspect='equal',
-                       vmin=0, vmax=1)  # Fix color scale to [0,1]
+                       vmin=0, vmax=1)
         plt.colorbar(im, label='Concentration')
         plt.xlabel('x')
         plt.ylabel('y')
@@ -142,7 +142,7 @@ class Twod:
                       origin='lower',
                       cmap='viridis',
                       aspect='equal',
-                      vmin=0, vmax=1)  # Fix color scale to [0,1]
+                      vmin=0, vmax=1)
         plt.colorbar(im, label='Heat')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
