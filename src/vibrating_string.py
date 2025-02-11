@@ -134,29 +134,36 @@ class Twod:
         plt.title(f't = {self.t:.3f}')
         plt.show()
 
-    def animate(self, num_frames=200, interval=100):
-        """Animate the evolution of the system"""
+    def animate(self, num_frames=200, interval=100, steps_per_frame=1):
+        """Animate the evolution of the system
+        Args:
+            num_frames: Total number of animation frames
+            interval: Time between frames in milliseconds
+            steps_per_frame: Number of diffusion steps calculated per frame
+        """
         fig, ax = plt.subplots(figsize=(8, 8))
         im = ax.imshow(self.c,
-                      extent=[0, self.L, 0, self.L],
-                      origin='lower',
-                      cmap='viridis',
-                      aspect='equal',
-                      vmin=0, vmax=1)
-        plt.colorbar(im, label='Heat')
+                    extent=[0, self.L, 0, self.L],
+                    origin='lower',
+                    cmap='viridis',
+                    aspect='equal',
+                    vmin=0, vmax=1)
+        plt.colorbar(im, label='Concentration')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
 
         def update(frame):
-            self.step()
+            # Do multiple steps per frame
+            for _ in range(steps_per_frame):
+                self.step()
             im.set_array(self.c)
-            ax.set_title(f't = {self.t:.3f}, frame = {frame}')
+            ax.set_title(f't = {self.t:.3f}, frame = {frame * steps_per_frame}')
             return [im]
 
-        anim = FuncAnimation(fig, update, frames=num_frames, interval=interval, blit=False)
+        anim = FuncAnimation(fig, update, frames=num_frames,
+                        interval=interval, blit=False)
         plt.show()
         return anim
-
 
 if __name__ == "__main__":
     # Example usage with stable parameters
@@ -169,4 +176,4 @@ if __name__ == "__main__":
     diff = Twod(N=N, L=L, dt=dt, D=D)
 
     # Run simulation with animation
-    diff.animate(num_frames=200, interval=0.01)
+    diff.animate(num_frames=1000, interval=1, steps_per_frame=5)
