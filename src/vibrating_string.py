@@ -80,8 +80,8 @@ class Twod:
         self.dt = dt
         self.D = D
 
-        # assert to check stability
-        assert (4 * self.dt  / self.dx ** 2) > 1, "Unstable"
+        # assert to check stability (CFL condition for diffusion)
+        assert (4 * self.D * self.dt / self.dx ** 2) <= 1, "Unstable: dt too large for given dx"
 
         # discretized points
         self.x = np.linspace(0, L, N)
@@ -91,67 +91,82 @@ class Twod:
         # empty 2d array for the 2d time dependent thing
         self.c = np.zeros((N, N))
 
-        # boundary starting conditions: c(x, y=1;t) = 1 and c(x, y=0;t) = 0
-        for i in range(0, N):
-            self.c[N-1, i] = 1
+        # Set initial boundary conditions
+        self.c[N-1, :] = 1  # top boundary
+        self.c[0, :] = 0    # bottom boundary
 
-        # copy for the next time step
-        self.c_next = np.copy(self.c)
+    def check_boundary_conditions(self):
+        """Check if boundary conditions are maintained"""
+        assert np.allclose(self.c[self.N-1, :], 1), "Top boundary condition violated"
+        assert np.allclose(self.c[0, :], 0), "Bottom boundary condition violated"
 
     def step(self):
+        c_next = np.copy(self.c)
+
+        c_next[self.N-1, :] = 1
+
+        # Update interior points
         for x in range(0, self.N):
-            for y in range(1, self.N - 1):
+            for y in range(1, self.N - 1):  # Skip boundary rows
                 xmin1 = (x - 1) % self.N
                 xplus1 = (x + 1) % self.N
-                # Fixed indexing: self.c[y, x] instead of self.c[x, y]
-                self.c_next[y, x] = self.c[y, x] + self.dt * self.D / self.dx ** 2 * \
-                    (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] + self.c[y - 1, x] - 4 * self.c[y, x])
+                c_next[y, x] = self.c[y, x] + self.dt * self.D / self.dx ** 2 * \
+                    (self.c[y, xplus1] + self.c[y, xmin1] + \
+                     self.c[y + 1, x] + self.c[y - 1, x] - 4 * self.c[y, x])
 
-        # update time step values
-        self.c = np.copy(self.c_next)  # Added np.copy() to prevent reference issues
-
+        # Update array, time and check boundaries
+        self.c = np.copy(c_next)
         self.t += self.dt
+        self.check_boundary_conditions()
 
-    def plot_3d(self):
-        fig = plt.figure(figsize=(8, 6))
-        ax = fig.add_subplot(111, projection='3d')
-
-        X, Y = np.meshgrid(self.x, self.y)
-        ax.plot_surface(X, Y, self.c, cmap='viridis')
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Concentration')
-        ax.set_title(f"Time Step: {self.t:.3f}")
-
+    def plot(self):
+        """Plot the current state of the system as a 2D color map"""
+        plt.figure(figsize=(8, 8))
+        im = plt.imshow(self.c,
+                       extent=[0, self.L, 0, self.L],
+                       origin='lower',
+                       cmap='viridis',
+                       aspect='equal',
+                       vmin=0, vmax=1)  # Fix color scale to [0,1]
+        plt.colorbar(im, label='Concentration')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(f't = {self.t:.3f}')
         plt.show()
 
-    def animate(self, num_frames=200, interval=50):
-        fig, ax = plt.subplots()
-        X, Y = np.meshgrid(self.x, self.y)
-
-        def init():
-            ax.clear()
-            return [ax.pcolormesh(X, Y, self.c, cmap='viridis')]
+    def animate(self, num_frames=200, interval=100):
+        """Animate the evolution of the system"""
+        fig, ax = plt.subplots(figsize=(8, 8))
+        im = ax.imshow(self.c,
+                      extent=[0, self.L, 0, self.L],
+                      origin='lower',
+                      cmap='viridis',
+                      aspect='equal',
+                      vmin=0, vmax=1)  # Fix color scale to [0,1]
+        plt.colorbar(im, label='Heat')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
 
         def update(frame):
             self.step()
-            ax.clear()
-            mesh = ax.pcolormesh(X, Y, self.c, cmap='viridis')
-            ax.set_title(f'Time: {self.t:.3f}')
-            return [mesh]
+            im.set_array(self.c)
+            ax.set_title(f't = {self.t:.3f}')
+            return [im]
 
-        anim = FuncAnimation(fig, update, frames=num_frames,
-                           init_func=init, interval=interval,
-                           blit=True)
-        plt.colorbar(ax.pcolormesh(X, Y, self.c, cmap='viridis'))
+        anim = FuncAnimation(fig, update, frames=num_frames, interval=interval, blit=True)
         plt.show()
+        return anim
 
 
 if __name__ == "__main__":
-    # Example usage:
-    diff = Twod(N=50, L=1.0)
-    diff.animate(num_frames=200, interval=100)
+    # Example usage with stable parameters
+    N = 50
+    L = 1.0
+    D = 1.0
+    dx = L/N
+    dt = 0.00001
 
-    # wave = String(N=100, L=1.0, initial_condition= 3)
-    # wave.simulate(steps=500)
+    diff = Twod(N=N, L=L, dt=dt, D=D)
+
+    # Run simulation with animation
+    diff.animate(num_frames=200, interval=1)
