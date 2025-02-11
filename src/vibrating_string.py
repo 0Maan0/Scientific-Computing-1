@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import time
 from matplotlib.animation import FuncAnimation
 
@@ -81,7 +80,8 @@ class Twod:
         self.D = D
 
         # assert to check stability
-        assert (4 * self.D * self.dt / self.dx ** 2) <= 1, "Unstable: dt too large for given dx"
+        assert (4 * self.D * self.dt / self.dx ** 2) <= 1, "Unstable: dt too large for given dx." + \
+            " Max value for dt is: " + str(self.dx ** 2 / (4 * self.D))
 
         # discretized points
         self.x = np.linspace(0, L, N)
@@ -150,10 +150,10 @@ class Twod:
         def update(frame):
             self.step()
             im.set_array(self.c)
-            ax.set_title(f't = {self.t:.3f}')
+            ax.set_title(f't = {self.t:.3f}, frame = {frame}')
             return [im]
 
-        anim = FuncAnimation(fig, update, frames=num_frames, interval=interval, blit=True)
+        anim = FuncAnimation(fig, update, frames=num_frames, interval=interval, blit=False)
         plt.show()
         return anim
 
@@ -164,9 +164,9 @@ if __name__ == "__main__":
     L = 1.0
     D = 1.0
     dx = L/N
-    dt = 0.00001
+    dt = 0.0001
 
     diff = Twod(N=N, L=L, dt=dt, D=D)
 
     # Run simulation with animation
-    diff.animate(num_frames=200, interval=1)
+    diff.animate(num_frames=200, interval=0.01)
