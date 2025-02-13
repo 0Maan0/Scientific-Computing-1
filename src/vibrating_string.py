@@ -1,3 +1,10 @@
+'''
+This modulle contains a class for simulating a vibrating string. 
+You can choose between three initial conditions for the string.
+1. sin(2*pi*x)
+2. sin(5*pi*x)
+3. sin(5*pi*x) if x is between 1/5 and 2/5, 0 otherwise
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -27,7 +34,8 @@ class String:
         self.y[-1] = 0
 
         # initial conditions ==> start with a gaussian curve eg. a wave
-        assert initial_condition in [1, 2, 3], "Invalid initial condition"
+        assert initial_condition in [1, 2, 3], "Invalid initial condition, choose between 1, 2, 3"
+
         if initial_condition == 1:
             self.y[:] = np.sin(2* np.pi *self.x)
         elif initial_condition == 2:
