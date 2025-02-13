@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from matplotlib.animation import FuncAnimation
+from scipy.special import erfc
 
 # 1.1 Vibrating string
 class String:
@@ -133,6 +134,26 @@ class Twod:
         plt.ylabel('y')
         plt.title(f't = {self.t:.3f}')
         plt.show()
+        
+    def test_2D_simulation(self, n_terms=10):
+        """""Test the correctness of the 2D simulation by comparing the final state to the analytical solution"""
+        # Analytical solution for the final state
+        c_analytical = np.zeros((self.N, self.N))
+        
+        # Test all points using the analytical diffusion equation as stated in the assignment
+        for j in range(self.N):
+            y = self.y[j]
+            for x_idx in range(self.N):
+                sum_terms = 0 
+                for i in range(n_terms):
+                    term1 = erfc((1 - y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
+                    term2 = erfc((1 + y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
+                    sum_terms += (term1 - term2)
+            c_analytical[j, x_idx] = sum_terms
+                
+        # compare the final state to the analytical solution
+        np.testing.assert_allclose(self.c, c_analytical, atol=1e-2)
+        
 
     def animate(self, num_frames=200, interval=100, steps_per_frame=1):
         """Animate the evolution of the system
@@ -176,4 +197,14 @@ if __name__ == "__main__":
     diff = Twod(N=N, L=L, dt=dt, D=D)
 
     # Run simulation with animation
-    diff.animate(num_frames=1000, interval=1, steps_per_frame=5)
+    # diff.animate(num_frames=1000, interval=1, steps_per_frame=5)
+    
+    for _ in range(1000):
+        diff.step()
+        
+    print("Testing against analytical solution...")
+    try:
+        diff.test_2D_simulation(n_terms=2)  
+        print("Test passed! Numerical solution matches analytical solution within tolerance.")
+    except AssertionError as e:
+        print("Test failed:", e)
