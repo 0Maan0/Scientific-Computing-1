@@ -145,21 +145,25 @@ class Twod:
         
     def test_2D_simulation(self, n_terms=10):
         """""Test the correctness of the 2D simulation by comparing the final state to the analytical solution"""
-        # Analytical solution for the final state
         c_analytical = np.zeros((self.N, self.N))
         
-        # Test all points using the analytical diffusion equation as stated in the assignment
         for j in range(self.N):
-            y = self.y[j]
-            for x_idx in range(self.N):
-                sum_terms = 0 
-                for i in range(n_terms):
-                    term1 = erfc((1 - y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
-                    term2 = erfc((1 + y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
-                    sum_terms += (term1 - term2)
-            c_analytical[j, x_idx] = sum_terms
-                
-        # compare the final state to the analytical solution
+            y = self.y[j] 
+            sum_terms = 0
+            for i in range(n_terms):
+                term1 = erfc((1 - y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
+                term2 = erfc((1 + y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
+                sum_terms += (term1 - term2)
+            
+            # apply this value to all x positions at this y level (i.e. row)
+            c_analytical[j, :] = sum_terms
+
+        # for very large t, verify we approach the linear solution c(y) = y
+        if self.t > 1.0:  
+            expected_linear = self.y.reshape(-1, 1)  
+            np.testing.assert_allclose(c_analytical, expected_linear, rtol=1e-2)
+            
+        # compare numerical to analytical solution
         np.testing.assert_allclose(self.c, c_analytical, atol=1e-2)
         
 
