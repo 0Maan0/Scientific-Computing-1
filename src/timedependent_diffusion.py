@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from matplotlib.animation import FuncAnimation
+from scipy.special import erfc
 
 
 # 1.2 The Time Dependent Diffusion Equation
@@ -33,7 +34,30 @@ class Diffusion:
         """Check if boundary conditions are maintained"""
         assert np.allclose(self.c[self.N-1, :], 1), "Top boundary condition violated"
         assert np.allclose(self.c[0, :], 0), "Bottom boundary condition violated"
+        
+    def test_2D_simulation(self, n_terms=10):
+        """""Test the correctness of the 2D simulation by comparing the final state to the analytical solution"""
+        c_analytical = np.zeros((self.N, self.N))
+        
+        for j in range(self.N):
+            y = self.y[j] 
+            sum_terms = 0
+            for i in range(n_terms):
+                term1 = erfc((1 - y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
+                term2 = erfc((1 + y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
+                sum_terms += (term1 - term2)
+            
+            # apply this value to all x positions at this y level (i.e. row)
+            c_analytical[j, :] = sum_terms
 
+        # for very large t, verify we approach the linear solution c(y) = y
+        if self.t > 1.0:  
+            expected_linear = self.y.reshape(-1, 1)  
+            np.testing.assert_allclose(c_analytical, expected_linear, rtol=1e-2)
+            
+        # compare numerical to analytical solution
+        np.testing.assert_allclose(self.c, c_analytical, atol=1e-2)
+        
     def step(self):
         """
         Update the system by one time step using the diffusion equation. This
@@ -116,3 +140,13 @@ if __name__ == "__main__":
 
     # Run simulation with animation
     diff.animate(num_frames=1000, interval=1, steps_per_frame=10)
+    
+    for _ in range(1000):
+        diff.step()
+        
+    print("Testing against analytical solution...")
+    try:
+        diff.test_2D_simulation(n_terms=2)  
+        print("Test passed! Numerical solution matches analytical solution within tolerance.")
+    except AssertionError as e:
+        print("Test failed:", e)
