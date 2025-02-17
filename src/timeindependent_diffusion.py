@@ -169,6 +169,29 @@ class time_independent_diffusion:
         plt.grid(True)
         plt.tight_layout()
         plt.show()
+    
+    def plot_all_convergence(self):
+        """
+        Plot the convergence history (delta vs iterations) for all methods.
+        """
+        plt.plot(figsize=(18, 6))
+        colors = ['tab:blue', 'tab:green', 'tab:red']
+        omega_values = [1.0, 1.0, 1.5]
+        
+        for i, method in enumerate(['jacobi', 'gauss-seidel', 'sor']):
+            self.omega = omega_values[i]
+            diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, 
+                                              method=method, omega=self.omega)
+            diff.solve()
+            plt.semilogy(diff.delta_history, label=method.capitalize(), color=colors[i])
+        plt.title(f'Conergence of different Methods')
+        plt.xlabel('Iteration')
+        plt.ylabel('Maximum Change (log scale)')
+        plt.grid(True)
+        plt.legend()
+        
+        plt.tight_layout()
+        plt.show()
         
     # def animate(self, num_frames=200, interval=100, steps_per_frame=1):
     #     """Animate the evolution of the system
@@ -214,10 +237,13 @@ if __name__ == "__main__":
         ('sor', 1.5)  # omega = 1.5 is often a good choice
     ]
 
-    for method, omega in methods:
-        print(f"\nSolving with {method.upper()} method:")
-        diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, 
-                                          method=method, omega=omega)
-        diff.solve()
-        diff.plot()
-        diff.plot_convergence()
+    diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='jacobi')
+    diff.plot_all_convergence()
+
+    # for method, omega in methods:
+    #     print(f"\nSolving with {method.upper()} method:")
+    #     diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, 
+    #                                       method=method, omega=omega)
+    #     diff.solve()
+    #     diff.plot()
+    #     diff.plot_convergence()
