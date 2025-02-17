@@ -1,4 +1,4 @@
-import numpy as np  
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -15,7 +15,7 @@ class time_independent_diffusion:
         # discretized points
         self.x = np.linspace(0, L, N)
         self.y = np.linspace(0, L, N)
-        
+
         # two grids for Jacobi method
         self.c = np.zeros((N, N))
 
@@ -27,7 +27,7 @@ class time_independent_diffusion:
         """Check if boundary conditions are maintained"""
         assert np.allclose(self.c[self.N-1, :], 1), "Top boundary condition violated"
         assert np.allclose(self.c[0, :], 0), "Bottom boundary condition violated"
-    
+
     def jacobi_step(self):
         """
         One Jacobi iteration step.
@@ -35,77 +35,71 @@ class time_independent_diffusion:
         c_next = np.copy(self.c)
         c_next[self.N-1, :] = 1 # top boundary
         c_next[0, :] = 0 # bottom boundary
-        
-        # Vectorized update of interior points
-        c_next[1:-1, 1:-1] = 0.25 * (
-        self.c[2:, 1:-1] +   # right neighbors
-        self.c[:-2, 1:-1] +  # left neighbors
-        self.c[1:-1, 2:] +   # top neighbors
-        self.c[1:-1, :-2]    # bottom neighbors
-    )
-    
+
+        # Vectorized update with wrapping boundary conditions (excluding first and last row)
+        c_next[1:-1, :] = 0.25 * (
+            self.c[2:, :] +     # below (next row, non-wrapped)
+            self.c[:-2, :] +    # above (previous row, non-wrapped)
+            self.c[1:-1, (np.arange(self.c.shape[1]) + 1) % self.c.shape[1]] +  # right neighbor (wraps around)
+            self.c[1:-1, (np.arange(self.c.shape[1]) - 1) % self.c.shape[1]]    # left neighbor (wraps around)
+        )
+
         # maximum change
         delta = np.max(np.abs(c_next - self.c))
-        
+
         # Update grid
         self.c = c_next
-        
+
         return delta
-    
+
     def gauss_seidel_step(self):
         """
         One Gauss-Seidel iteration step.
         """
         c_old = np.copy(self.c)
-        
+
         # boundary conditions
         self.c[self.N-1, :] = 1  # top boundary
         self.c[0, :] = 0  # bottom boundary
-        
-        for x in range(1, self.N-1):
-            for y in range(1, self.N-1):
-                # use the most recently updated values
-                self.c[x, y] = 0.25 * (
-                    self.c[x+1, y] +   # right neighbor
-                    self.c[x-1, y] +   # left neighbor
-                    self.c[x, y+1] +   # top neighbor
-                    self.c[x, y-1]     # bottom neighbor
-                )
-        
+
+        # Update all point using the diffusion equation as stated in the assignment
+        for x in range(0, self.N):
+            for y in range(1, self.N - 1):  # Skip boundary rows
+                xmin1 = (x - 1) % self.N
+                xplus1 = (x + 1) % self.N
+                self.c[y, x] = 1 / 4 * (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] + \
+                                        self.c[y - 1, x])
+
         # maximum change
         delta = np.max(np.abs(self.c - c_old))
-        
+
         return delta
-    
+
     def sor_step(self):
         """
         One Successive Over-Relaxation (SOR) iteration step.
         """
         c_old = np.copy(self.c)
-        
+
         # boundary conditions
         self.c[self.N-1, :] = 1  # top boundary
         self.c[0, :] = 0  # bottom boundary
-        
-        for x in range(1, self.N-1):
-            for y in range(1, self.N-1):
-                #  the Gauss-Seidel update
-                gs_update = 0.25 * (
-                    self.c[x+1, y] +   # right neighbor
-                    self.c[x-1, y] +   # left neighbor
-                    self.c[x, y+1] +   # top neighbor
-                    self.c[x, y-1]     # bottom neighbor
-                )
-                
-                # SOR (Successive Over-Relaxation)
-                self.c[x, y] = (1 - self.omega) * self.c[x, y] + self.omega * gs_update
-        
+
+        # Update all point using the diffusion equation as stated in the assignment
+        for x in range(0, self.N):
+            for y in range(1, self.N - 1):  # Skip boundary rows
+                xmin1 = (x - 1) % self.N
+                xplus1 = (x + 1) % self.N
+                self.c[y, x] = self.omega / 4 * (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] + \
+                                        self.c[y - 1, x]) + (1 - self.omega) * self.c[y, x]
+
+
         # Calculate maximum change
         delta = np.max(np.abs(self.c - c_old))
-        
+
         return delta
 
-    
+
     def solve(self):
         """
         Solve the time-independent diffusion equation using Jacobi iteration.
@@ -113,7 +107,7 @@ class time_independent_diffusion:
         # history tracking
         self.delta_history = []
         self.iterations = None
-        
+
         # Select the appropriate method
         if self.method == 'jacobi':
             step_method = self.jacobi_step
@@ -123,12 +117,12 @@ class time_independent_diffusion:
             step_method = self.sor_step
         else:
             raise ValueError(f"Unknown method: {self.method}")
-        
+
         # iteration
         for iteration in range(self.max_iter):
             delta = step_method()
             self.delta_history.append(delta)
-            
+
             if delta < self.epsilon:
                 print(f"Converged after {iteration+1} iterations (delta={delta:.2e})")
                 self.iterations = iteration + 1
@@ -138,7 +132,7 @@ class time_independent_diffusion:
             print(f"Warning: Failed to converge after {self.max_iter} iterations")
             print(f"Last delta: {delta}")
             print(f"Epsilon: {self.epsilon}")
-        
+
         return self.iterations
 
     def plot(self):
@@ -156,7 +150,7 @@ class time_independent_diffusion:
         plt.title(f'Steady State Concentration Distribution({self.method.capitalize()})')
         plt.tight_layout()
         plt.show()
-        
+
     def plot_convergence(self):
         """
         Plot the convergence history (delta vs iterations).
@@ -169,7 +163,7 @@ class time_independent_diffusion:
         plt.grid(True)
         plt.tight_layout()
         plt.show()
-        
+
     # def animate(self, num_frames=200, interval=100, steps_per_frame=1):
     #     """Animate the evolution of the system
     #     Args:
@@ -211,12 +205,14 @@ if __name__ == "__main__":
     methods = [
         ('jacobi', 1.0),
         ('gauss-seidel', 1.0),
-        ('sor', 1.5)  # omega = 1.5 is often a good choice
+        ('sor', 1.7),
+        ('sor', 1.8),
+        ('sor', 1.9),
     ]
 
     for method, omega in methods:
         print(f"\nSolving with {method.upper()} method:")
-        diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, 
+        diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon,
                                           method=method, omega=omega)
         diff.solve()
         diff.plot()
