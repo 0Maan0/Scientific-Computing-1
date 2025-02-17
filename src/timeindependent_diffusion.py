@@ -1,9 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import seaborn as sns
+
+# Plotting parameters
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+titlesize = 16
+labelsize = 14
+colors = sns.color_palette("Set2", 8)
+ticksize = 14
 
 class time_independent_diffusion:
-    def __init__(self, N, L, epsilon = 1e-5, max_iter = 10000, method='jacobi', omega=1.0):
+    def __init__(self, N, L, epsilon = 1e-5, max_iter = 10000, method='Jacobi', omega=1.0):
         self.N = N
         self.L = L
         self.dx = L / N
@@ -109,11 +118,11 @@ class time_independent_diffusion:
         self.iterations = None
 
         # Select the appropriate method
-        if self.method == 'jacobi':
+        if self.method == 'Jacobi':
             step_method = self.jacobi_step
-        elif self.method == 'gauss-seidel':
+        elif self.method == 'Gauss-Seidel':
             step_method = self.gauss_seidel_step
-        elif self.method == 'sor':
+        elif self.method == 'SOR':
             step_method = self.sor_step
         else:
             raise ValueError(f"Unknown method: {self.method}")
@@ -145,9 +154,11 @@ class time_independent_diffusion:
                        aspect='equal',
                        vmin=0, vmax=1)
         plt.colorbar(im, label='Concentration')
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title(f'Steady State Concentration Distribution({self.method.capitalize()})')
+        plt.xlabel('x', fontsize=labelsize)
+        plt.ylabel('y', fontsize=labelsize)
+        plt.title(f'Steady State Concentration Distribution({self.method.capitalize()})', fontsize=titlesize)
+        plt.yticks(fontsize=ticksize)
+        plt.xticks(fontsize=ticksize)
         plt.tight_layout()
         plt.show()
 
@@ -155,11 +166,13 @@ class time_independent_diffusion:
         """
         Plot the convergence history (delta vs iterations).
         """
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(8, 8))
         plt.semilogy(self.delta_history)
-        plt.title('Convergence of Jacobi Iteration')
-        plt.xlabel('Iteration')
-        plt.ylabel('Maximum Change (log scale)')
+        plt.title('Convergence of Jacobi Iteration', fontsize=titlesize)
+        plt.xlabel('Iteration', fontsize=labelsize)
+        plt.ylabel('Maximum Change (log scale)', fontsize=labelsize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
         plt.grid(True)
         plt.tight_layout()
         plt.show()
@@ -168,56 +181,44 @@ class time_independent_diffusion:
         """
         Plot the convergence history (delta vs iterations) for all methods.
         """
-        plt.plot(figsize=(18, 6))
-        colors = ['tab:blue', 'tab:green', 'tab:red']
-        omega_values = [1.0, 1.0, 1.5]
+        plt.plot(figsize=(8, 8))
+        omega_values = [1.0, 1.0, 1.7, 1.8, 1.9]
 
-        for i, method in enumerate(['jacobi', 'gauss-seidel', 'sor']):
-            self.omega = omega_values[i]
+        for i, method in enumerate(['Jacobi', 'Gauss-Seidel', 'SOR', 'SOR', 'SOR']):
+            omega_temp = omega_values[i]
             diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon,
-                                              method=method, omega=self.omega)
+                                              method=method, omega=omega_temp)
             diff.solve()
-            plt.semilogy(diff.delta_history, label=method.capitalize(), color=colors[i])
-        plt.title(f'Conergence of different Methods')
-        plt.xlabel('Iteration')
-        plt.ylabel('Maximum Change (log scale)')
+            plt.semilogy(diff.delta_history, label=rf"{method.capitalize()}, $\omega$ = {omega_temp}", color=colors[i])
+        plt.title(f'Conergence of different Methods', fontsize=titlesize)
+        plt.xlabel('Iteration', fontsize=labelsize)
+        plt.ylabel('Maximum Change (log scale)', fontsize=labelsize)
         plt.grid(True)
-        plt.legend()
-
+        plt.legend(fontsize=ticksize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
         plt.tight_layout()
+        plt.savefig('../figures/convergence.pdf')
         plt.show()
-
-    # def animate(self, num_frames=200, interval=100, steps_per_frame=1):
-    #     """Animate the evolution of the system
-    #     Args:
-    #         num_frames: Total number of animation frames
-    #         interval: Time between frames in milliseconds
-    #         steps_per_frame: Number of diffusion steps calculated per frame
-    #     """
-    #     fig, ax = plt.subplots(figsize=(8, 8))
-    #     im = ax.imshow(self.c,
-    #                 extent=[0, self.L, 0, self.L],
-    #                 origin='lower',
-    #                 cmap='viridis',
-    #                 aspect='equal',
-    #                 vmin=0, vmax=1)
-    #     plt.colorbar(im, label='Concentration')
-    #     ax.set_xlabel('x')
-    #     ax.set_ylabel('y')
-
-    #     def update(frame):
-    #         # Do multiple steps per frame
-    #         for _ in range(steps_per_frame):
-    #             self.step()
-    #         im.set_array(self.c)
-    #         #ax.set_title(f't = {self.t:.3f}, frame = {frame * steps_per_frame}')
-    #         return [im]
-
-    #     anim = FuncAnimation(fig, update, frames=num_frames,
-    #                     interval=interval, blit=False)
-    #     plt.show()
-    #     return anim
-
+    def plot_all_concentrations(self):
+        # plot c for each value of y for each method
+        methods = ['Jacobi', 'Gauss-Seidel', 'SOR']
+        print(f"Plotting concentration at each y for different methods")
+        plt.figure(figsize=(8, 8))
+        linestyles = ['-', '--', '-.']
+        for i, method in enumerate(methods):
+            diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method=method, omega = 1.9)
+            diff.solve()
+            plt.plot(diff.y, diff.c[:,2], label=f"{method.capitalize()}", color=colors[i], linestyle=linestyles[i])
+        plt.title('Concentration at each y for different methods', fontsize=titlesize)
+        plt.ylabel('y', fontsize=labelsize)
+        plt.xlabel('Concentration', fontsize=labelsize)
+        plt.legend(fontsize=ticksize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
+        plt.tight_layout()
+        plt.savefig('../figures/concentration_at_y.pdf')
+        plt.show()
 
 if __name__ == "__main__":
     # Example usage with stable parameters
@@ -226,15 +227,16 @@ if __name__ == "__main__":
     epsilon = 1e-6
 
     methods = [
-        ('jacobi', 1.0),
-        ('gauss-seidel', 1.0),
-        ('sor', 1.7),
-        ('sor', 1.8),
-        ('sor', 1.9),
+        ('Jacobi', 1.0),
+        ('Gauss-Seidel', 1.0),
+        ('SOR', 1.7),
+        ('SOR', 1.8),
+        ('SOR', 1.9),
     ]
 
-    diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='jacobi')
+    diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
     diff.plot_all_convergence()
+    diff.plot_all_concentrations()
 
     # for method, omega in methods:
     #     print(f"\nSolving with {method.upper()} method:")
