@@ -143,6 +143,58 @@ class time_independent_diffusion:
             print(f"Epsilon: {self.epsilon}")
 
         return self.iterations
+    
+    def optimal_omega_binarysearch(self, tol=1e-3, max_iter=100):
+        """
+        Finds the optimal omega for the SOR method using binary search.
+        """
+        omega_left, omega_right = 1.7, 2.0  # Optimal range for our diffusion problem
+        best_omega = None
+        best_iterations = np.inf
+
+        for _ in range(max_iter):
+            omega_mid = (omega_left + omega_right) / 2
+            omega_test = omega_mid + tol
+
+            diff_mid = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_mid)
+            iterations_mid = diff_mid.solve()
+
+            diff_test = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_test)
+            iterations_test = diff_test.solve()
+
+            if iterations_test < iterations_mid:
+                omega_left = omega_mid 
+            else:
+                omega_right = omega_mid
+
+            if iterations_mid < best_iterations:
+                best_omega = omega_mid
+                best_iterations = iterations_mid
+
+            if abs(omega_right - omega_left) < tol:
+                break
+
+        print(f"Optimal omega: {best_omega:.3f} (Converged in {best_iterations} iterations)")
+        return best_omega
+    
+    def plot_omega_N(self, min_N=10, max_N=100, num_N=10):
+        """
+        Plots the optimal omega as a function of N.
+        """
+        N_values = np.linspace(min_N, max_N, num_N, dtype=int) 
+        optimal_omega_values = []
+        for N in N_values:
+            self.N = N
+            optimal_omega_values.append(self.optimal_omega_binarysearch())
+        plt.figure(figsize=(8, 8))
+        plt.plot(N_values, optimal_omega_values, 'o-', color=colors[0])
+        plt.xlabel('N', fontsize=labelsize)
+        plt.ylabel(r'Optimal $\omega$', fontsize=labelsize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
+        plt.tight_layout()
+        plt.savefig('../figures/optimal_omega_N.pdf')
+        plt.show()
 
     def plot(self):
         """Plot the current state of the system as a 2D color map"""
@@ -182,14 +234,14 @@ class time_independent_diffusion:
         Plot the convergence history (delta vs iterations) for all methods.
         """
         plt.plot(figsize=(8, 8))
-        omega_values = [1.0, 1.0, 1.7, 1.8, 1.9]
+        omega_values = [1.0, 1.0, 1.7, 1.8, 1.92] # add more indicative values?
 
-        for i, method in enumerate(['Jacobi', 'Gauss-Seidel', 'SOR', 'SOR', 'SOR']):
+        for i, method in enumerate(['Jacobi', 'Gauss-Seidel','SOR', 'SOR', 'SOR']):
             omega_temp = omega_values[i]
             diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon,
                                               method=method, omega=omega_temp)
             diff.solve()
-            plt.semilogy(diff.delta_history, label=rf"{method.capitalize()}, $\omega$ = {omega_temp}", color=colors[i])
+            plt.semilogy(diff.delta_history, label=rf"{method.capitalize()} ($\omega$ = {omega_temp})", color=colors[i])
         plt.title(f'Convergence of different Methods', fontsize=titlesize)
         plt.xlabel('Iteration', fontsize=labelsize)
         plt.ylabel(r'Maximum Change $\delta$ (log scale)', fontsize=labelsize)
@@ -200,26 +252,17 @@ class time_independent_diffusion:
         plt.tight_layout()
         plt.savefig('../figures/convergence.pdf')
         plt.show()
-    def plot_all_concentrations(self):
-        # plot c for each value of y for each method
-        methods = ['Jacobi', 'Gauss-Seidel', 'SOR']
-        print(f"Plotting concentration at each y for different methods")
-        plt.figure(figsize=(8, 8))
-        linestyles = ['-', '--', '-.']
-        for i, method in enumerate(methods):
-            diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method=method, omega = 1.9)
-            diff.solve()
-            plt.plot(diff.y, diff.c[:,2], label=f"{method.capitalize()}", color=colors[i], linestyle=linestyles[i])
-        plt.title('Concentration at each y for different methods', fontsize=titlesize)
-        plt.ylabel('y', fontsize=labelsize)
-        plt.xlabel('Concentration', fontsize=labelsize)
-        plt.legend(fontsize=ticksize)
-        plt.xticks(fontsize=ticksize)
-        plt.yticks(fontsize=ticksize)
-        plt.tight_layout()
-        plt.savefig('../figures/concentration_at_y.pdf')
-        plt.show()
 
+    def test_2D_simulation(self):
+        """""Test the correctness of the simulation by comparing the final state to the analytical solution"""
+        diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method=self.method, omega=self.omega)
+        diff.solve()
+        c_analytical = diff.y
+        for x in range(self.N):
+            cx = diff.c[:,x]
+            np.testing.assert_allclose(cx, c_analytical, rtol=1e-2)
+        print
+        
 if __name__ == "__main__":
     # Example usage with stable parameters
     N = 50
@@ -235,8 +278,15 @@ if __name__ == "__main__":
     ]
 
     diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
-    diff.plot_all_convergence()
-    diff.plot_all_concentrations()
+    print("Testing against analytical solution...")
+    try:
+        diff.test_2D_simulation()  
+        print("Test passed! Numerical solution matches analytical solution within tolerance.")
+    except AssertionError as e:
+        print("Test failed:", e)
+    #diff.plot_omega_N()
+    #diff.optimal_omega_binarysearch()
+    #diff.plot_all_concentrations()
 
     # for method, omega in methods:
     #     print(f"\nSolving with {method.upper()} method:")
