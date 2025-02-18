@@ -3,7 +3,13 @@ import matplotlib.pyplot as plt
 import time
 from matplotlib.animation import FuncAnimation
 from scipy.special import erfc
+import seaborn as sns
 
+# Plotting parameters
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+labelsize = 14
+ticksize = 14
 
 # 1.2 The Time Dependent Diffusion Equation
 class Diffusion:
@@ -94,9 +100,9 @@ class Diffusion:
                        aspect='equal',
                        vmin=0, vmax=1)
         plt.colorbar(im, label='Concentration')
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title(f't = {self.t:.3f}')
+        plt.xlabel('x', fontsize=labelsize)
+        plt.ylabel('y', fontsize=labelsize)
+        plt.title(f't = {self.t:.3f}', fontsize=labelsize)
         plt.show()
 
     def animate(self, num_frames=200, interval=100, steps_per_frame=1):
@@ -113,9 +119,10 @@ class Diffusion:
                     cmap='viridis',
                     aspect='equal',
                     vmin=0, vmax=1)
+        # size of text colorbar
         plt.colorbar(im, label='Concentration')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+        ax.set_xlabel('x', fontsize=labelsize)
+        ax.set_ylabel('y', fontsize=labelsize)
 
         def update(frame):
             # Do multiple steps per frame
@@ -134,6 +141,7 @@ class Diffusion:
 
         anim = FuncAnimation(fig, update, frames=num_frames,
                         interval=interval, blit=False)
+        #anim.save(filename="../figures/timedep_diffusion.mkv", writer="ffmpeg")
         plt.show()
         return anim
 

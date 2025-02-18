@@ -1,9 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import seaborn as sns
+
+# Plotting parameters
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+titlesize = 16
+labelsize = 14
+colors = sns.color_palette("Set2", 8)
+ticksize = 14
 
 class time_independent_diffusion:
-    def __init__(self, N, L, epsilon = 1e-5, max_iter = 10000, method='jacobi', omega=1.0):
+    def __init__(self, N, L, epsilon = 1e-5, max_iter = 10000, method='Jacobi', omega=1.0):
         self.N = N
         self.L = L
         self.dx = L / N
@@ -116,11 +125,11 @@ class time_independent_diffusion:
         self.iterations = None
 
         # Select the appropriate method
-        if self.method == 'jacobi':
+        if self.method == 'Jacobi':
             step_method = self.jacobi_step
-        elif self.method == 'gauss-seidel':
+        elif self.method == 'Gauss-Seidel':
             step_method = self.gauss_seidel_step
-        elif self.method == 'sor':
+        elif self.method == 'SOR':
             step_method = self.sor_step
         else:
             raise ValueError(f"Unknown method: {self.method}")
@@ -142,6 +151,58 @@ class time_independent_diffusion:
 
         return self.iterations
 
+    def optimal_omega_binarysearch(self, tol=1e-3, max_iter=100):
+        """
+        Finds the optimal omega for the SOR method using binary search.
+        """
+        omega_left, omega_right = 1.7, 2.0  # Optimal range for our diffusion problem
+        best_omega = None
+        best_iterations = np.inf
+
+        for _ in range(max_iter):
+            omega_mid = (omega_left + omega_right) / 2
+            omega_test = omega_mid + tol
+
+            diff_mid = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_mid)
+            iterations_mid = diff_mid.solve()
+
+            diff_test = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_test)
+            iterations_test = diff_test.solve()
+
+            if iterations_test < iterations_mid:
+                omega_left = omega_mid
+            else:
+                omega_right = omega_mid
+
+            if iterations_mid < best_iterations:
+                best_omega = omega_mid
+                best_iterations = iterations_mid
+
+            if abs(omega_right - omega_left) < tol:
+                break
+
+        print(f"Optimal omega: {best_omega:.3f} (Converged in {best_iterations} iterations)")
+        return best_omega
+
+    def plot_omega_N(self, min_N=10, max_N=100, num_N=10):
+        """
+        Plots the optimal omega as a function of N.
+        """
+        N_values = np.linspace(min_N, max_N, num_N, dtype=int)
+        optimal_omega_values = []
+        for N in N_values:
+            self.N = N
+            optimal_omega_values.append(self.optimal_omega_binarysearch())
+        plt.figure(figsize=(8, 8))
+        plt.plot(N_values, optimal_omega_values, 'o-', color=colors[0])
+        plt.xlabel('N', fontsize=labelsize)
+        plt.ylabel(r'Optimal $\omega$', fontsize=labelsize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
+        plt.tight_layout()
+        plt.savefig('../figures/optimal_omega_N.pdf')
+        plt.show()
+
     def plot(self):
         """Plot the current state of the system as a 2D color map"""
         plt.figure(figsize=(8, 8))
@@ -152,9 +213,11 @@ class time_independent_diffusion:
                        aspect='equal',
                        vmin=0, vmax=1)
         plt.colorbar(im, label='Concentration')
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title(f'Steady State Concentration Distribution({self.method.capitalize()})')
+        plt.xlabel('x', fontsize=labelsize)
+        plt.ylabel('y', fontsize=labelsize)
+        plt.title(f'Steady State Concentration Distribution({self.method.capitalize()})', fontsize=titlesize)
+        plt.yticks(fontsize=ticksize)
+        plt.xticks(fontsize=ticksize)
         plt.tight_layout()
         plt.show()
 
@@ -162,11 +225,13 @@ class time_independent_diffusion:
         """
         Plot the convergence history (delta vs iterations).
         """
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(8, 8))
         plt.semilogy(self.delta_history)
-        plt.title('Convergence of Jacobi Iteration')
-        plt.xlabel('Iteration')
-        plt.ylabel('Maximum Change (log scale)')
+        plt.title('Convergence of Jacobi Iteration', fontsize=titlesize)
+        plt.xlabel('Iteration', fontsize=labelsize)
+        plt.ylabel('Maximum Change (log scale)', fontsize=labelsize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
         plt.grid(True)
         plt.tight_layout()
         plt.show()
@@ -175,24 +240,35 @@ class time_independent_diffusion:
         """
         Plot the convergence history (delta vs iterations) for all methods.
         """
-        plt.plot(figsize=(18, 6))
-        colors = ['tab:blue', 'tab:green', 'tab:red']
-        omega_values = [1.0, 1.0, 1.5]
+        plt.plot(figsize=(8, 8))
+        omega_values = [1.0, 1.0, 1.7, 1.8, 1.92] # add more indicative values?
 
-        for i, method in enumerate(['jacobi', 'gauss-seidel', 'sor']):
-            self.omega = omega_values[i]
+        for i, method in enumerate(['Jacobi', 'Gauss-Seidel','SOR', 'SOR', 'SOR']):
+            omega_temp = omega_values[i]
             diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon,
-                                              method=method, omega=self.omega)
+                                              method=method, omega=omega_temp)
             diff.solve()
-            plt.semilogy(diff.delta_history, label=method.capitalize(), color=colors[i])
-        plt.title(f'Conergence of different Methods')
-        plt.xlabel('Iteration')
-        plt.ylabel('Maximum Change (log scale)')
+            plt.semilogy(diff.delta_history, label=rf"{method.capitalize()} ($\omega$ = {omega_temp})", color=colors[i])
+        plt.title(f'Convergence of different Methods', fontsize=titlesize)
+        plt.xlabel('Iteration', fontsize=labelsize)
+        plt.ylabel(r'Maximum Change $\delta$ (log scale)', fontsize=labelsize)
         plt.grid(True)
-        plt.legend()
-
+        plt.legend(fontsize=ticksize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
         plt.tight_layout()
+        plt.savefig('../figures/convergence.pdf')
         plt.show()
+
+    def test_2D_simulation(self):
+        """""Test the correctness of the simulation by comparing the final state to the analytical solution"""
+        diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method=self.method, omega=self.omega)
+        diff.solve()
+        c_analytical = diff.y
+        for x in range(self.N):
+            cx = diff.c[:,x]
+            np.testing.assert_allclose(cx, c_analytical, rtol=1e-2)
+        print
 
     def add_line(self, x0, y0, x1, y1):
         """
@@ -306,55 +382,30 @@ class time_independent_diffusion:
                     self.objects[y, x] = 1
 
 
-
-    # def animate(self, num_frames=200, interval=100, steps_per_frame=1):
-    #     """Animate the evolution of the system
-    #     Args:
-    #         num_frames: Total number of animation frames
-    #         interval: Time between frames in milliseconds
-    #         steps_per_frame: Number of diffusion steps calculated per frame
-    #     """
-    #     fig, ax = plt.subplots(figsize=(8, 8))
-    #     im = ax.imshow(self.c,
-    #                 extent=[0, self.L, 0, self.L],
-    #                 origin='lower',
-    #                 cmap='viridis',
-    #                 aspect='equal',
-    #                 vmin=0, vmax=1)
-    #     plt.colorbar(im, label='Concentration')
-    #     ax.set_xlabel('x')
-    #     ax.set_ylabel('y')
-
-    #     def update(frame):
-    #         # Do multiple steps per frame
-    #         for _ in range(steps_per_frame):
-    #             self.step()
-    #         im.set_array(self.c)
-    #         #ax.set_title(f't = {self.t:.3f}, frame = {frame * steps_per_frame}')
-    #         return [im]
-
-    #     anim = FuncAnimation(fig, update, frames=num_frames,
-    #                     interval=interval, blit=False)
-    #     plt.show()
-    #     return anim
-
-
 if __name__ == "__main__":
-    # Example usage with stable parameters
+ # Example usage with stable parameters
     N = 50
     L = 1.0
     epsilon = 1e-6
 
     methods = [
-        # ('jacobi', 1.0),
-        # ('gauss-seidel', 1.0),
-        # ('sor', 1.7),
-        # ('sor', 1.8),
-        ('sor', 1.92),
+        ('Jacobi', 1.0),
+        ('Gauss-Seidel', 1.0),
+        ('SOR', 1.7),
+        ('SOR', 1.8),
+        ('SOR', 1.9),
     ]
 
-    diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='jacobi')
-    # diff.plot_all_convergence()
+    diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
+    print("Testing against analytical solution...")
+    try:
+        diff.test_2D_simulation()
+        print("Test passed! Numerical solution matches analytical solution within tolerance.")
+    except AssertionError as e:
+        print("Test failed:", e)
+    #diff.plot_omega_N()
+    #diff.optimal_omega_binarysearch()
+    #diff.plot_all_concentrations()
 
     # for method, omega in methods:
     #     print(f"\nSolving with {method.upper()} method:")
@@ -365,9 +416,21 @@ if __name__ == "__main__":
     #     diff.plot_convergence()
 
     def test_objects():
+        N = 100
+        L = 1.0
+        epsilon = 1e-6
+
+        methods = [
+            # ('jacobi', 1.0),
+            # ('gauss-seidel', 1.0),
+            # ('sor', 1.7),
+            # ('sor', 1.8),
+            ('SOR', 1.92),
+        ]
+
         for method, omega in methods:
             print(f"\nSolving with {method.upper()} method:")
-            diff = time_independent_diffusion(N=200, L=L, epsilon=epsilon,
+            diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon,
                                             method=method, omega=omega)
 
             # horizontal line

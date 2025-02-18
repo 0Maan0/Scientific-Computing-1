@@ -10,6 +10,15 @@ import matplotlib.pyplot as plt
 import time
 from matplotlib.animation import FuncAnimation
 from scipy.special import erfc
+import seaborn as sns
+
+# Plotting parameters
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+labelsize = 14
+ticksize = 14
+colors = sns.color_palette("Set2", 8)
+
 
 # 1.1 Vibrating string
 class String:
@@ -64,10 +73,14 @@ class String:
     def simulate(self, steps):
 
         fig, ax = plt.subplots()
-        line, = ax.plot(self.x, self.y, color = 'tab:blue')
+        line, = ax.plot(self.x, self.y, color = colors[0])
         ax.set_ylim(-1, 1)
-        plt.xlabel('x')
-        plt.ylabel('y')
+        plt.xlabel('x', fontsize=labelsize)
+        plt.ylabel('y', fontsize=labelsize)
+        plt.xticks(fontsize=ticksize)
+        plt.yticks(fontsize=ticksize)
+        #plt.title('Vibrating string')
+        
 
         def update(frame):
             for step in range(steps):
@@ -138,8 +151,8 @@ class Twod:
                        aspect='equal',
                        vmin=0, vmax=1)
         plt.colorbar(im, label='Concentration')
-        plt.xlabel('x')
-        plt.ylabel('y')
+        plt.xlabel('x', fontsize=labelsize)
+        plt.ylabel('y', ticksize = labelsize)
         plt.title(f't = {self.t:.3f}')
         plt.show()
         
@@ -182,8 +195,8 @@ class Twod:
                     aspect='equal',
                     vmin=0, vmax=1)
         plt.colorbar(im, label='Concentration')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+        ax.set_xlabel('x', fontsize = labelsize)
+        ax.set_ylabel('y', fontsize = labelsize)
 
         def update(frame):
             # Do multiple steps per frame
@@ -209,7 +222,7 @@ if __name__ == "__main__":
     diff = Twod(N=N, L=L, dt=dt, D=D)
 
     # Run simulation with animation
-    # diff.animate(num_frames=1000, interval=1, steps_per_frame=5)
+    diff.animate(num_frames=1000, interval=1, steps_per_frame=5)
     
     for _ in range(1000):
         diff.step()
