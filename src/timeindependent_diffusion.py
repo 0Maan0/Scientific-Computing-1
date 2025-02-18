@@ -23,6 +23,8 @@ class time_independent_diffusion:
         self.c[N-1, :] = 1
         self.c[0, :] = 0
 
+        self.objects = np.zeros((N, N))
+
     def check_boundary_conditions(self):
         """Check if boundary conditions are maintained"""
         assert np.allclose(self.c[self.N-1, :], 1), "Top boundary condition violated"
@@ -88,6 +90,11 @@ class time_independent_diffusion:
         # Update all point using the diffusion equation as stated in the assignment
         for x in range(0, self.N):
             for y in range(1, self.N - 1):  # Skip boundary rows
+
+                # skip objects
+                if self.objects[y, x] == 1:
+                    continue
+
                 xmin1 = (x - 1) % self.N
                 xplus1 = (x + 1) % self.N
                 self.c[y, x] = self.omega / 4 * (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] + \
@@ -187,6 +194,119 @@ class time_independent_diffusion:
         plt.tight_layout()
         plt.show()
 
+    def add_line(self, x0, y0, x1, y1):
+        """
+        Add a line as a sink to the system domain. This value will be 0.
+
+        Args:
+            x0, y0: Starting point of the line ratios between 0 and 1
+            x1, y1: Ending point of the line ratios between 0 and 1
+
+        based off the simple DDA line generation algorithm:
+        https://www.geeksforgeeks.org/dda-line-generation-algorithm-computer-graphics/
+        """
+        assert all(0 <= el <= 1 for el in [x0, y0, x1, y1]), \
+               "line points must be in the range [0, 1]"
+        coords = set()
+
+        # map xs to the system domain
+        x0 = int(x0 * self.N)
+        x1 = int(x1 * self.N)
+
+        # exclude the upper and lower bounds in the y-mapping
+        y0 = 1 + int(y0 * self.N - 2)
+        y1 = 1 + int(y1 * self.N - 2)
+
+        dx = x1 - x0
+        dy = y1 - y0
+
+        steps = max(abs(dx), abs(dy))
+
+        xinc = dx/steps
+        yinc = dy/steps
+
+        # start with 1st point
+        x = x0
+        y = y0
+        coords.add((x0, y0))
+
+        for i in range(steps):
+            x = x + xinc
+            y = y + yinc
+            coords.add((round(x), round(y)))
+
+        # add the objects to the object grid
+        for x, y in coords:
+            self.objects[y, x] = 1
+
+    def add_polygon(self, points, method='line'):
+        """
+        Add a polygon as a sink to the system domain. This value will be 0.
+
+        Args:
+            points: List of points (x, y) that define the polygon
+            method: Method to connect the points. 'line' connects each point to the next.
+        """
+        assert len(points) >= 3, "A polygon must have at least 3 points"
+        assert all(0 <= x <= 1 and 0 <= y <= 1 for x, y in points), \
+               "Polygon points must be in the range [0, 1]"
+        if method == 'line':
+            for i in range(len(points)):
+                x0, y0 = points[i]
+                x1, y1 = points[(i+1) % len(points)]
+                self.add_line(x0, y0, x1, y1)
+        else:
+            raise ValueError(f"Unknown method: {method}")
+
+    def add_rectangle(self, x0, y0, x1, y1):
+        """
+        Add a rectangle as a sink to the system domain. This value will be 0.
+
+        Args:
+            x0, y0: Bottom left corner of the rectangle ratios between 0 and 1
+            x1, y1: Top right corner of the rectangle ratios between 0 and 1
+        """
+        assert all(0 <= el <= 1 for el in [x0, y0, x1, y1]), \
+               "rectangle corners must be in the range [0, 1]"
+        points = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        self.add_polygon(points)
+
+    def add_square(self, x0, y0, size):
+        """
+        Add a square as a sink to the system domain. This value will be 0.
+
+        Args:
+            x0, y0: Bottom left corner of the square ratios between 0 and 1
+            size: Size of the square
+        """
+        assert all(0 <= el <= 1 for el in [x0, y0]), \
+               "square corner must be in the range [0, 1]"
+        assert 0 <= size <= 1, "size must be in the range [0, 1]"
+        x1 = x0 + size
+        y1 = y0 + size
+        self.add_rectangle(x0, y0, x1, y1)
+
+    def add_circle(self, x0, y0, r):
+        """
+        Add a circle as a sink to the system domain. This value will be 0.
+
+        Args:
+            x0, y0: Center of the circle ratios between 0 and 1
+            r: Radius of the circle
+        """
+        assert all(0 <= el <= 1 for el in [x0, y0]), \
+               "circle center must be in the range [0, 1]"
+        x0 = int(x0 * self.N)
+        y0 = 1 + int(y0 * self.N - 2)
+        r = int(r * self.N)
+
+        for x in range(self.N):
+            for y in range(1, self.N - 1):
+                if (x - x0) ** 2 + (y - y0) ** 2 <= r ** 2:
+                    self.objects[y, x] = 1
+
+
+
     # def animate(self, num_frames=200, interval=100, steps_per_frame=1):
     #     """Animate the evolution of the system
     #     Args:
@@ -226,15 +346,15 @@ if __name__ == "__main__":
     epsilon = 1e-6
 
     methods = [
-        ('jacobi', 1.0),
-        ('gauss-seidel', 1.0),
-        ('sor', 1.7),
-        ('sor', 1.8),
-        ('sor', 1.9),
+        # ('jacobi', 1.0),
+        # ('gauss-seidel', 1.0),
+        # ('sor', 1.7),
+        # ('sor', 1.8),
+        ('sor', 1.92),
     ]
 
     diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='jacobi')
-    diff.plot_all_convergence()
+    # diff.plot_all_convergence()
 
     # for method, omega in methods:
     #     print(f"\nSolving with {method.upper()} method:")
@@ -243,3 +363,25 @@ if __name__ == "__main__":
     #     diff.solve()
     #     diff.plot()
     #     diff.plot_convergence()
+
+    def test_objects():
+        for method, omega in methods:
+            print(f"\nSolving with {method.upper()} method:")
+            diff = time_independent_diffusion(N=200, L=L, epsilon=epsilon,
+                                            method=method, omega=omega)
+
+            # horizontal line
+            diff.add_line(0.075, 0.9, 0.125, 0.9)
+            # vertical line
+            diff.add_line(0.25, 0.925, 0.25, 0.875)
+            # lil triangle (polygon)
+            diff.add_polygon([(0.375, 0.85), (0.4, 0.95), (0.425, 0.85)])
+            # rectangle
+            diff.add_rectangle(0.55, 0.925, 0.6, 0.85)
+            # # circle
+            diff.add_circle(0.85, 0.9, 0.05)
+
+            diff.solve()
+            diff.plot()
+
+    test_objects()
