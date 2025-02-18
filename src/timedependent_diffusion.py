@@ -7,12 +7,14 @@ from scipy.special import erfc
 
 # 1.2 The Time Dependent Diffusion Equation
 class Diffusion:
-    def __init__(self, N, L, dt=0.001, D=1):
+    def __init__(self, N, L, dt=0.001, D=1, tol=1e-3):
         self.N = N
         self.L = L
         self.dx = L / N
         self.dt = dt
         self.D = D
+        self.delta = 1  # high starting value
+        self.tol = tol
 
         # assert to check stability
         assert (4 * self.D * self.dt / self.dx ** 2) <= 1, "Unstable: dt too large for given dx." + \
@@ -34,30 +36,30 @@ class Diffusion:
         """Check if boundary conditions are maintained"""
         assert np.allclose(self.c[self.N-1, :], 1), "Top boundary condition violated"
         assert np.allclose(self.c[0, :], 0), "Bottom boundary condition violated"
-        
+
     def test_2D_simulation(self, n_terms=10):
         """""Test the correctness of the 2D simulation by comparing the final state to the analytical solution"""
         c_analytical = np.zeros((self.N, self.N))
-        
+
         for j in range(self.N):
-            y = self.y[j] 
+            y = self.y[j]
             sum_terms = 0
             for i in range(n_terms):
                 term1 = erfc((1 - y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
                 term2 = erfc((1 + y + 2 * i) / (2 * np.sqrt(self.D * self.t)))
                 sum_terms += (term1 - term2)
-            
+
             # apply this value to all x positions at this y level (i.e. row)
             c_analytical[j, :] = sum_terms
 
         # for very large t, verify we approach the linear solution c(y) = y
-        if self.t > 1.0:  
-            expected_linear = self.y.reshape(-1, 1)  
+        if self.t > 1.0:
+            expected_linear = self.y.reshape(-1, 1)
             np.testing.assert_allclose(c_analytical, expected_linear, rtol=1e-2)
-            
+
         # compare numerical to analytical solution
         np.testing.assert_allclose(self.c, c_analytical, atol=1e-2)
-        
+
     def step(self):
         """
         Update the system by one time step using the diffusion equation. This
@@ -77,6 +79,7 @@ class Diffusion:
                      self.c[y + 1, x] + self.c[y - 1, x] - 4 * self.c[y, x])
 
         # Update array, time and check boundaries
+        self.delta = np.max(np.abs(c_next - self.c))
         self.c = np.copy(c_next)
         self.t += self.dt
         self.check_boundary_conditions()
@@ -118,6 +121,13 @@ class Diffusion:
             # Do multiple steps per frame
             for _ in range(steps_per_frame):
                 self.step()
+
+                # stopping condition
+                if self.delta < self.tol:
+                    anim.event_source.stop()
+                    print(f"Stopping early at frame {frame}, t = {self.t:.3f}, delta = {self.delta:.6f}")
+                    break
+
             im.set_array(self.c)
             ax.set_title(f't = {self.t:.3f}, frame = {frame * steps_per_frame}')
             return [im]
@@ -136,17 +146,34 @@ if __name__ == "__main__":
     dx = L/N
     dt = 0.0001
 
-    diff = Diffusion(N=N, L=L, dt=dt, D=D)
+    diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
+
 
     # Run simulation with animation
     diff.animate(num_frames=1000, interval=1, steps_per_frame=10)
-    
-    for _ in range(1000):
-        diff.step()
-        
-    print("Testing against analytical solution...")
-    try:
-        diff.test_2D_simulation(n_terms=2)  
-        print("Test passed! Numerical solution matches analytical solution within tolerance.")
-    except AssertionError as e:
-        print("Test failed:", e)
+
+    def plot_times():
+        fp_tol = 1e-10
+        diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
+        # plot 0
+        diff.plot()
+
+        # plot rest of the times
+        times = [0.001, 0.01, 0.1, 1.0]
+        while True:
+            diff.step()
+            for t in times:
+                if np.isclose(diff.t, t, atol=fp_tol):
+                    diff.plot()
+
+    # plot_times()
+
+    def test():
+        print("Testing against analytical solution...")
+        try:
+            diff.test_2D_simulation(n_terms=2)
+            print("Test passed! Numerical solution matches analytical solution within tolerance.")
+        except AssertionError as e:
+            print("Test failed:", e)
+
+    # test()
