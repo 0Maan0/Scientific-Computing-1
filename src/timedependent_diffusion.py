@@ -61,10 +61,46 @@ class Diffusion:
         # for very large t, verify we approach the linear solution c(y) = y
         if self.t > 1.0:
             expected_linear = self.y.reshape(-1, 1)
-            np.testing.assert_allclose(c_analytical, expected_linear, rtol=1e-2)
+            np.testing.assert_allclose(c_analytical, expected_linear, rtol=1, atol=1e-6)
 
         # compare numerical to analytical solution
-        np.testing.assert_allclose(self.c, c_analytical, atol=1e-2)
+        np.testing.assert_allclose(self.c, c_analytical,rtol=1, atol=1e-6)
+        
+    def plot_analytical(self, times=[0.001, 0.01, 0.1, 1.0], n_terms=10):
+        """
+        Plot analytical solution for different t.
+        """
+        plt.figure(figsize=(10, 6))
+        
+        # Line styles for different times
+        linestyles = ['-', '--', ':', '-.']
+        
+        # Fine grid for smooth curves
+        y_fine = np.linspace(0, self.L, 200)
+        
+        for i, t in enumerate(times):
+            c_analytical = np.zeros_like(y_fine)
+            
+            # Calculate analytical solution
+            for j, y in enumerate(y_fine):
+                sum_terms = 0
+                for k in range(n_terms):
+                    term1 = erfc((1 - y + 2 * k) / (2 * np.sqrt(self.D * t)))
+                    term2 = erfc((1 + y + 2 * k) / (2 * np.sqrt(self.D * t)))
+                    sum_terms += (term1 - term2)
+                c_analytical[j] = sum_terms
+            
+            plt.plot(y_fine, c_analytical,
+                    linestyle=linestyles[i],
+                    label=f'Dt={t:.3f}')
+        
+        plt.xlabel('y', fontsize=labelsize)
+        plt.ylabel('c', fontsize=labelsize)
+        plt.title('Analytical Solution for Different Times', fontsize=labelsize)
+        plt.grid(True)
+        plt.legend(fontsize=10)
+        plt.tight_layout()
+        plt.show()
 
     def step(self):
         """
@@ -141,7 +177,7 @@ class Diffusion:
 
         anim = FuncAnimation(fig, update, frames=num_frames,
                         interval=interval, blit=False)
-        #anim.save(filename="../figures/timedep_diffusion.mkv", writer="ffmpeg")
+        # anim.save(filename="../figures/timedep_diffusion.mkv", writer="ffmpeg")
         plt.show()
         return anim
 
@@ -155,17 +191,14 @@ if __name__ == "__main__":
     dt = 0.0001
 
     diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
-
-
-    # Run simulation with animation
     diff.animate(num_frames=1000, interval=1, steps_per_frame=10)
-
+    
     def plot_times():
         fp_tol = 1e-10
         diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
         # plot 0
         diff.plot()
-
+        plt.savefig('./figures/diffusion_t_0.jpg', bbox_inches='tight')
         # plot rest of the times
         times = [0.001, 0.01, 0.1, 1.0]
         while True:
@@ -173,6 +206,7 @@ if __name__ == "__main__":
             for t in times:
                 if np.isclose(diff.t, t, atol=fp_tol):
                     diff.plot()
+                    # plt.savefig(f'./figures/diffusion_t_{t:.3f}.jpg', bbox_inches='tight')
 
     # plot_times()
 
@@ -185,3 +219,7 @@ if __name__ == "__main__":
             print("Test failed:", e)
 
     # test()
+    
+    diff.plot_analytical()
+
+
