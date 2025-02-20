@@ -60,6 +60,8 @@ class String:
                     self.y[index] = 0
         self.y_before[:] = self.y
 
+        self.initialcondition_string = ["$\sin(2\pi x)$", "$\sin(5\pi x)$", "$\sin(5\pi x) $ if $ 1/5 < x < 2/5, 0 $ otherwise"]
+
     def step(self):
         for i in range(1, self.N - 1):
             self.y_after[i] = (
@@ -81,8 +83,7 @@ class String:
         plt.ylabel('y', fontsize=labelsize)
         plt.xticks(fontsize=ticksize)
         plt.yticks(fontsize=ticksize)
-        #plt.title('Vibrating string')
-        
+        plt.title(rf'$\Psi(x, t=0) = ${self.initialcondition_string[self.initial_condition-1]}', fontsize=labelsize)
 
         def update(frame):
             for step in range(steps):
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     L = 1.0
     dt = 0.001
 
-    diff = String(N=N, L=L, dt=dt)
+    diff = String(N=N, L=L, dt=dt, initial_condition=2)
 
     # Run simulation with animation
     diff.simulate(steps=1000)
