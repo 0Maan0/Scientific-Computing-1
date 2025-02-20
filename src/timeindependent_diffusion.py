@@ -152,7 +152,7 @@ class time_independent_diffusion:
 
         return self.iterations
 
-    def optimal_omega_binarysearch(self, tol=1e-3, max_iter=100):
+    def optimal_omega_binarysearch(self, tol=1e-3, max_iter=100, objects=False):
         """
         Finds the optimal omega for the SOR method using binary search.
         """
@@ -165,9 +165,13 @@ class time_independent_diffusion:
             omega_test = omega_mid + tol
 
             diff_mid = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_mid)
+            if objects:
+                diff.init_heart()
             iterations_mid = diff_mid.solve()
 
             diff_test = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_test)
+            if objects:
+                diff.init_heart()
             iterations_test = diff_test.solve()
 
             if iterations_test < iterations_mid:
@@ -234,7 +238,7 @@ class time_independent_diffusion:
         plt.colorbar(im, label='Concentration')
         plt.xlabel('x', fontsize=labelsize)
         plt.ylabel('y', fontsize=labelsize)
-        plt.title(f'Steady State Concentration Distribution({self.method})', fontsize=titlesize)
+        plt.title(f'Steady State Concentration Distribution ({self.method})', fontsize=titlesize)
         plt.yticks(fontsize=ticksize)
         plt.xticks(fontsize=ticksize)
         plt.tight_layout()
@@ -400,6 +404,84 @@ class time_independent_diffusion:
                 if (x - x0) ** 2 + (y - y0) ** 2 <= r ** 2:
                     self.objects[y, x] = 1
 
+    def add_semi_circle(self, x0, y0, r):
+        """
+        Add a top-half semicircle as a sink to the system domain.
+
+        Args:
+            x0, y0: Center of the semicircle (normalized between 0 and 1).
+            r: Radius of the semicircle (normalized between 0 and 1).
+        """
+        assert all(0 <= el <= 1 for el in [x0, y0]), \
+            "Semicircle center must be in the range [0, 1]"
+
+        # Convert normalized coordinates to grid indices
+        x0 = int(x0 * self.N)
+        y0 = 1 + int(y0 * self.N - 2)
+        r = int(r * self.N)
+
+        # Iterate through the grid and mark only the top-half of the circle
+        for x in range(self.N):
+            for y in range(1, self.N - 1):
+                if (x - x0) ** 2 + (y - y0) ** 2 <= r ** 2 and y >= y0:
+                    self.objects[y, x] = 1  # Fill the semicircle
+
+
+    def init_objects(self):
+        """
+        Initialize some random objects in the system domain.
+        """
+        # horizontal line
+        self.add_line(0.075, 0.9, 0.125, 0.9)
+        # vertical line
+        self.add_line(0.25, 0.925, 0.25, 0.875)
+        # lil triangle (polygon)
+        self.add_polygon([(0.375, 0.85), (0.4, 0.95), (0.44, 0.85)])
+        # rectangle
+        self.add_rectangle(0.55, 0.925, 0.6, 0.85)
+        # # circle
+        self.add_circle(0.85, 0.9, 0.075)
+
+    def fill_triangle(self, p1, p2, p3):
+        """
+        Fill a triangle in the system domain.
+
+        Args:
+            p1, p2, p3: Tuples (x, y) representing the triangle vertices (normalized between 0 and 1).
+        """
+        assert all(0 <= x <= 1 and 0 <= y <= 1 for x, y in [p1, p2, p3]), \
+            "Triangle points must be in the range [0, 1]"
+
+        # Convert normalized coordinates to grid space
+        x1, y1 = int(p1[0] * self.N), int(p1[1] * self.N)
+        x2, y2 = int(p2[0] * self.N), int(p2[1] * self.N)
+        x3, y3 = int(p3[0] * self.N), int(p3[1] * self.N)
+
+        # Compute bounding box
+        min_x = max(min(x1, x2, x3), 0)
+        max_x = min(max(x1, x2, x3), self.N - 1)
+        min_y = max(min(y1, y2, y3), 0)
+        max_y = min(max(y1, y2, y3), self.N - 1)
+
+        # Barycentric coordinate method to determine if a point is inside the triangle
+        def is_inside(px, py):
+            detT = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
+            alpha = ((y2 - y3) * (px - x3) + (x3 - x2) * (py - y3)) / detT
+            beta = ((y3 - y1) * (px - x3) + (x1 - x3) * (py - y3)) / detT
+            gamma = 1 - alpha - beta
+            return 0 <= alpha <= 1 and 0 <= beta <= 1 and 0 <= gamma <= 1
+
+        # Iterate through the bounding box and fill in the triangle
+        for x in range(min_x, max_x + 1):
+            for y in range(min_y, max_y + 1):
+                if is_inside(x, y):
+                    self.objects[y, x] = 1  # Fill the triangle
+
+    def init_heart(self):
+        self.fill_triangle((0.5, 0.3), (0.3, 0.6), (0.7, 0.6))  # Fills a triangle
+        self.add_semi_circle(0.4, 0.6, 0.1)
+        self.add_semi_circle(0.6, 0.6, 0.1)
+
 
 if __name__ == "__main__":
  # Example usage with stable parameters
@@ -415,13 +497,13 @@ if __name__ == "__main__":
         ('SOR', 1.9),
     ]
 
-    diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
-    print("Testing against analytical solution...")
-    try:
-        diff.test_2D_simulation()
-        print("Test passed! Numerical solution matches analytical solution within tolerance.")
-    except AssertionError as e:
-        print("Test failed:", e)
+    # diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
+    # print("Testing against analytical solution...")
+    # try:
+    #     diff.test_2D_simulation()
+    #     print("Test passed! Numerical solution matches analytical solution within tolerance.")
+    # except AssertionError as e:
+        # print("Test failed:", e)
 
     diff.plot_all_convergence()
     diff.plot_omega_N()
@@ -437,15 +519,11 @@ if __name__ == "__main__":
     #     diff.plot_convergence()
 
     def test_objects():
-        N = 50
+        N = 200
         L = 1.0
         epsilon = 1e-6
 
         methods = [
-            # ('jacobi', 1.0),
-            # ('gauss-seidel', 1.0),
-            # ('sor', 1.7),
-            # ('sor', 1.8),
             ('SOR', 1.92),
         ]
 
@@ -453,19 +531,22 @@ if __name__ == "__main__":
             print(f"\nSolving with {method.upper()} method:")
             diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon,
                                             method=method, omega=omega)
-
-            # horizontal line
-            diff.add_line(0.075, 0.9, 0.125, 0.9)
-            # vertical line
-            diff.add_line(0.25, 0.925, 0.25, 0.875)
-            # lil triangle (polygon)
-            diff.add_polygon([(0.375, 0.85), (0.4, 0.95), (0.44, 0.85)])
-            # rectangle
-            diff.add_rectangle(0.55, 0.925, 0.6, 0.85)
-            # # circle
-            diff.add_circle(0.85, 0.9, 0.075)
+            diff.init_heart()
 
             diff.solve()
             diff.plot()
 
-    #test_objects()
+    # test_objects()
+
+    def test_omega_objects():
+        N = 50
+        L = 1.0
+        epsilon = 1e-6
+
+        diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='SOR')
+        # set to true so then adds the heart to the diffusion objects
+        diff.optimal_omega_binarysearch(objects=True)
+
+    test_omega_objects()
+
+
