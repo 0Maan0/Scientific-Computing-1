@@ -151,7 +151,7 @@ class time_independent_diffusion:
 
         return self.iterations
 
-    def optimal_omega_binarysearch(self, tol=1e-3, max_iter=100):
+    def optimal_omega_binarysearch(self, tol=1e-3, max_iter=100, objects=False):
         """
         Finds the optimal omega for the SOR method using binary search.
         """
@@ -164,9 +164,13 @@ class time_independent_diffusion:
             omega_test = omega_mid + tol
 
             diff_mid = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_mid)
+            if objects:
+                diff.init_heart()
             iterations_mid = diff_mid.solve()
 
             diff_test = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_test)
+            if objects:
+                diff.init_heart()
             iterations_test = diff_test.solve()
 
             if iterations_test < iterations_mid:
@@ -494,9 +498,9 @@ if __name__ == "__main__":
     # except AssertionError as e:
         # print("Test failed:", e)
 
-    #diff.plot_omega_N()
-    #diff.optimal_omega_binarysearch()
-    #diff.plot_all_concentrations()
+    # diff.plot_omega_N()
+    # diff.optimal_omega_binarysearch()
+    # diff.plot_all_concentrations()
 
     # for method, omega in methods:
     #     print(f"\nSolving with {method.upper()} method:")
@@ -524,4 +528,17 @@ if __name__ == "__main__":
             diff.solve()
             diff.plot()
 
-    test_objects()
+    # test_objects()
+
+    def test_omega_objects():
+        N = 50
+        L = 1.0
+        epsilon = 1e-6
+
+        diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='SOR')
+
+        diff.optimal_omega_binarysearch()
+
+    test_omega_objects()
+
+
