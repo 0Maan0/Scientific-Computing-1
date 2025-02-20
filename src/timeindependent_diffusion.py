@@ -12,7 +12,7 @@ colors = sns.color_palette("Set2", 8)
 ticksize = 14
 
 class time_independent_diffusion:
-    def __init__(self, N, L, epsilon = 1e-5, max_iter = 10000, method='Jacobi', omega=1.0):
+    def __init__(self, N, L, epsilon=1e-5, max_iter=10000, method='Jacobi', omega=1.0):
         self.N = N
         self.L = L
         self.dx = L / N
