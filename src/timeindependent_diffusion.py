@@ -193,19 +193,19 @@ class time_independent_diffusion:
         """
         Plots the optimal omega as a function of N.
         """
-        # N_values = np.linspace(min_N, max_N, num_N, dtype=int)
-        # optimal_omega_values = []
-        # for N in N_values:
-        #     self.N = N
-        #     optimal_omega_values.append(self.optimal_omega_binarysearch())
-        # # save in csv N_values and Omega values
-        # np.savetxt('../results/N_values.csv', N_values, delimiter=',')
-        # np.savetxt('../results/optimal_omega_N.csv', optimal_omega_values, delimiter=',')
-        N_values = np.loadtxt('../results/N_values.csv', delimiter=',')
-        optimal_omega_values = np.loadtxt('../results/optimal_omega_N.csv', delimiter=',')
+        N_values = np.linspace(min_N, max_N, num_N, dtype=int)
+        optimal_omega_values = []
+        for N in N_values:
+            self.N = N
+            optimal_omega_values.append(self.optimal_omega_binarysearch())
+        # save in csv N_values and Omega values
+        np.savetxt('../results/N_values.csv', N_values, delimiter=',')
+        np.savetxt('../results/optimal_omega_N.csv', optimal_omega_values, delimiter=',')
+        # N_values = np.loadtxt('../results/N_values.csv', delimiter=',')
+        # optimal_omega_values = np.loadtxt('../results/optimal_omega_N.csv', delimiter=',')
         plt.figure(figsize=(8, 5))
         plt.plot(N_values, optimal_omega_values, 'o-', color=colors[1])
-        plt.xlabel('Intervals (N)', fontsize=labelsize+4)
+        plt.xlabel(r'Intervals ($N$)', fontsize=labelsize+4)
         plt.ylabel(r'Optimal $\omega$', fontsize=labelsize+4)
         plt.xticks(fontsize=ticksize+4)
         plt.yticks(fontsize=ticksize+4)
@@ -234,14 +234,17 @@ class time_independent_diffusion:
                     origin='lower',
                     cmap=object_color,
                     alpha=0.5)
-
-        plt.colorbar(im, label='Concentration')
-        plt.xlabel('x', fontsize=labelsize)
-        plt.ylabel('y', fontsize=labelsize)
-        plt.title(f'Steady State Concentration Distribution ({self.method})', fontsize=titlesize)
-        plt.yticks(fontsize=ticksize)
-        plt.xticks(fontsize=ticksize)
+        plus = 4
+        cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
+        cbar.set_label('Concentration', fontsize=labelsize+plus)
+        cbar.ax.tick_params(labelsize=ticksize+plus)
+        plt.xlabel('x', fontsize=labelsize+ plus)
+        plt.ylabel('y', fontsize=labelsize+ plus)
+        #plt.title(f'Steady State Concentration Distribution ({self.method})', fontsize=titlesize)
+        plt.yticks(fontsize=ticksize+ plus)
+        plt.xticks(fontsize=ticksize+ plus)
         plt.tight_layout()
+        plt.savefig('../figures/concentration_distribution.pdf')
         plt.show()
 
     def plot_convergence(self):
@@ -251,7 +254,7 @@ class time_independent_diffusion:
         plt.figure(figsize=(8, 8))
         plt.semilogy(self.delta_history)
         plt.title('Convergence of Jacobi Iteration', fontsize=titlesize)
-        plt.xlabel('Iteration', fontsize=labelsize)
+        plt.xlabel(r'Iterations ($k$)', fontsize=labelsize)
         plt.ylabel('Maximum Change (log scale)', fontsize=labelsize)
         plt.xticks(fontsize=ticksize)
         plt.yticks(fontsize=ticksize)
@@ -273,7 +276,7 @@ class time_independent_diffusion:
             diff.solve()
             plt.semilogy(diff.delta_history, label=rf"{method} ($\omega$ = {omega_temp})", color=colors[i])
         #plt.title(f'Convergence of different Methods', fontsize=titlesize)
-        plt.xlabel('Iteration', fontsize=labelsize)
+        plt.xlabel(r'Iterations ($k$)', fontsize=labelsize)
         plt.ylabel(r'Maximum Change $\delta$ (log scale)', fontsize=labelsize)
         plt.grid(True)
         plt.legend(fontsize=ticksize)
@@ -497,7 +500,7 @@ if __name__ == "__main__":
         ('SOR', 1.9),
     ]
 
-    # diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
+    diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
     # print("Testing against analytical solution...")
     # try:
     #     diff.test_2D_simulation()
@@ -536,7 +539,7 @@ if __name__ == "__main__":
             diff.solve()
             diff.plot()
 
-    # test_objects()
+    test_objects()
 
     def test_omega_objects():
         N = 50
@@ -547,6 +550,6 @@ if __name__ == "__main__":
         # set to true so then adds the heart to the diffusion objects
         diff.optimal_omega_binarysearch(objects=True)
 
-    test_omega_objects()
+   # test_omega_objects()
 
 
