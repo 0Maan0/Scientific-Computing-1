@@ -536,8 +536,8 @@ if __name__ == "__main__":
         epsilon = 1e-6
 
         diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='SOR')
-
-        diff.optimal_omega_binarysearch()
+        # set to true so then adds the heart to the diffusion objects
+        diff.optimal_omega_binarysearch(objects=True)
 
     test_omega_objects()
 
