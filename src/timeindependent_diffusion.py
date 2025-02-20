@@ -206,12 +206,24 @@ class time_independent_diffusion:
     def plot(self):
         """Plot the current state of the system as a 2D color map"""
         plt.figure(figsize=(8, 8))
+
         im = plt.imshow(self.c,
                        extent=[0, self.L, 0, self.L],
                        origin='lower',
                        cmap='viridis',
                        aspect='equal',
                        vmin=0, vmax=1)
+
+        # Overlay objects
+        if self.objects.any():
+            object_color = 'gray'
+            object_array = np.ma.masked_where(self.objects == 0, self.objects)
+            plt.imshow(object_array,
+                    extent=[0, self.L, 0, self.L],
+                    origin='lower',
+                    cmap=object_color,
+                    alpha=0.5)
+
         plt.colorbar(im, label='Concentration')
         plt.xlabel('x', fontsize=labelsize)
         plt.ylabel('y', fontsize=labelsize)
@@ -403,6 +415,7 @@ if __name__ == "__main__":
         print("Test passed! Numerical solution matches analytical solution within tolerance.")
     except AssertionError as e:
         print("Test failed:", e)
+
     #diff.plot_omega_N()
     #diff.optimal_omega_binarysearch()
     #diff.plot_all_concentrations()
@@ -416,7 +429,7 @@ if __name__ == "__main__":
     #     diff.plot_convergence()
 
     def test_objects():
-        N = 100
+        N = 50
         L = 1.0
         epsilon = 1e-6
 
@@ -438,11 +451,11 @@ if __name__ == "__main__":
             # vertical line
             diff.add_line(0.25, 0.925, 0.25, 0.875)
             # lil triangle (polygon)
-            diff.add_polygon([(0.375, 0.85), (0.4, 0.95), (0.425, 0.85)])
+            diff.add_polygon([(0.375, 0.85), (0.4, 0.95), (0.44, 0.85)])
             # rectangle
             diff.add_rectangle(0.55, 0.925, 0.6, 0.85)
             # # circle
-            diff.add_circle(0.85, 0.9, 0.05)
+            diff.add_circle(0.85, 0.9, 0.075)
 
             diff.solve()
             diff.plot()
