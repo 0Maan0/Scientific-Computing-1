@@ -8,8 +8,11 @@ import seaborn as sns
 # Plotting parameters
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
-labelsize = 14
-ticksize = 14
+
+titlesize = 16
+labelsize = 20
+colors = sns.color_palette("Set2", 8)
+ticksize = 18
 
 # 1.2 The Time Dependent Diffusion Equation
 class Diffusion:
@@ -93,13 +96,16 @@ class Diffusion:
             plt.plot(y_fine, c_analytical,
                     linestyle=linestyles[i],
                     label=f'Dt={t:.3f}')
-        
-        plt.xlabel('y', fontsize=labelsize)
-        plt.ylabel('c', fontsize=labelsize)
-        plt.title('Analytical Solution for Different Times', fontsize=labelsize)
+            
+        plt.xlabel('c(y)', fontsize=labelsize+4)
+        plt.ylabel('Concentration(c)', fontsize=labelsize+4)
+        plt.xticks(fontsize=ticksize+4)
+        plt.yticks(fontsize=ticksize+4)
         plt.grid(True)
-        plt.legend(fontsize=10)
+        plt.legend(fontsize=ticksize+4)
         plt.tight_layout()
+        plt.grid(True)
+        plt.savefig('./figures/analytical_plot.pdf')
         plt.show()
 
     def step(self):
@@ -135,10 +141,15 @@ class Diffusion:
                        cmap='viridis',
                        aspect='equal',
                        vmin=0, vmax=1)
-        plt.colorbar(im, label='Concentration')
-        plt.xlabel('x', fontsize=labelsize)
-        plt.ylabel('y', fontsize=labelsize)
-        plt.title(f't = {self.t:.3f}', fontsize=labelsize)
+        cbar = plt.colorbar(im, label='Concentration (c)')
+        cbar.ax.tick_params(labelsize=ticksize+8)
+        cbar.set_label('Concentration (c)', fontsize=labelsize+8)
+        plt.xlabel('x', fontsize=labelsize+8)
+        plt.ylabel('y', fontsize=labelsize+8)
+        plt.xticks(fontsize=ticksize+8)
+        plt.yticks(fontsize=ticksize+8)
+        plt.title(f't = {self.t:.3f}', fontsize=labelsize+4)
+        plt.savefig(f'./figures/diffusion_t_{self.t:.3f}.pdf', bbox_inches='tight')
         plt.show()
 
     def animate(self, num_frames=200, interval=100, steps_per_frame=1):
@@ -198,17 +209,14 @@ if __name__ == "__main__":
         diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
         # plot 0
         diff.plot()
-        plt.savefig('./figures/diffusion_t_0.jpg', bbox_inches='tight')
         # plot rest of the times
         times = [0.001, 0.01, 0.1, 1.0]
         while True:
             diff.step()
             for t in times:
                 if np.isclose(diff.t, t, atol=fp_tol):
-                    diff.plot()
-                    # plt.savefig(f'./figures/diffusion_t_{t:.3f}.jpg', bbox_inches='tight')
-
-    # plot_times()
+                    diff.plot()    
+    plot_times()
 
     def test():
         print("Testing against analytical solution...")
