@@ -192,6 +192,70 @@ class Diffusion:
         plt.show()
         return anim
 
+    def compare_plot(self, num_steps=1000, times=[0.001, 0.01, 0.1, 1.0], n_terms=10):
+        """
+        Compare the numerical solution with the analytical solution at the specified time steps.
+
+        Args:
+            num_steps: Number of steps to run the numerical simulation for comparison.
+            times: List of times to compare the analytical solution.
+            n_terms: Number of terms for the analytical solution approximation.
+        """
+        num_lines = []
+        colors = sns.color_palette("Set2", len(times))  # Generate a color palette for the number of times
+
+        # Run the simulation and capture numerical solutions at specified times
+        for _ in range(num_steps):
+            if np.any(np.isclose(self.t, times, atol=1e-6)):  # Check if current time is in the desired times
+                num_lines.append([r[0] for r in self.c])  # Extract the first value of each row (x=0) and reverse for correct order
+            self.step()
+
+        # Define the y values (concentration axis)
+        y_fine = np.linspace(0, self.L, self.N)
+
+        # Create the figure for plotting
+        plt.figure(figsize=(10, 6))
+
+        # Loop through the given times and extract the numerical and analytical solutions
+        for idx, t in enumerate(times):
+            # Check if numerical solution for time t exists (should be in num_lines)
+            if idx < len(num_lines):
+                numerical_values = num_lines[idx]
+                plt.plot(self.y, numerical_values, label=f'Numerical t={t:.3f}', linestyle='-', marker='o',
+                         color=colors[idx], markersize=8)
+
+            # Now compute the analytical solution for this time t
+            c_analytical = np.zeros_like(self.y)
+            for i, y in enumerate(self.y):
+                sum_terms = 0
+                for k in range(n_terms):
+                    term1 = erfc((1 - y + 2 * k) / (2 * np.sqrt(self.D * t)))
+                    term2 = erfc((1 + y + 2 * k) / (2 * np.sqrt(self.D * t)))
+                    sum_terms += (term1 - term2)
+                c_analytical[i] = sum_terms
+
+            # Plot the analytical solution for this time step with the same color as the numerical
+            plt.plot(self.y, c_analytical, label=f'Analytical t={t:.3f}', linestyle='--', color=colors[idx],
+                     linewidth=2)
+
+        # Final plot settings
+        plt.xlabel('y', fontsize=labelsize+8)
+        plt.ylabel('Concentration (c)', fontsize=labelsize+8)
+        plt.xticks(fontsize=ticksize+8)
+        plt.yticks(fontsize=ticksize+8)
+        plt.legend(fontsize=ticksize+8)
+        plt.grid(True)
+
+        # Adjust layout and add whitespace above the figure
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.9)  # Increase the top margin for title visibility
+
+        # Set the title
+        plt.title(f"Comparison of Numerical and Analytical Solutions", fontsize=labelsize+6)
+
+        # Show the plot
+        plt.show()
+
 
 if __name__ == "__main__":
     # Example usage with stable parameters
@@ -202,6 +266,7 @@ if __name__ == "__main__":
     dt = 0.0001
 
     diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
+    diff.compare_plot(num_steps=10010, times=[0.001, 0.01, 0.1, 1.0])
     # diff.animate(num_frames=2000, interval=10, steps_per_frame=1)
 
     def plot_times():
@@ -228,4 +293,3 @@ if __name__ == "__main__":
 
     # test()
 
-    diff.plot_analytical()
