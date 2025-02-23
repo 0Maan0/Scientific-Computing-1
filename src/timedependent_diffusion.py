@@ -202,7 +202,7 @@ if __name__ == "__main__":
     dt = 0.0001
 
     diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
-    diff.animate(num_frames=2000, interval=10, steps_per_frame=1)
+    # diff.animate(num_frames=2000, interval=10, steps_per_frame=1)
 
     def plot_times():
         fp_tol = 1e-10
@@ -228,4 +228,4 @@ if __name__ == "__main__":
 
     # test()
 
-    # diff.plot_analytical()
+    diff.plot_analytical()
