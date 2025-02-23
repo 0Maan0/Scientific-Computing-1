@@ -189,26 +189,36 @@ class time_independent_diffusion:
         print(f"Optimal omega: {best_omega:.3f} (Converged in {best_iterations} iterations)")
         return best_omega
 
-    def plot_omega_N(self, min_N=10, max_N=300, num_N=10):
+    def plot_omega_N(self, min_N=10, max_N=100, num_N=10, objects=False):
         """
         Plots the optimal omega as a function of N.
         """
+        print(objects)
         N_values = np.linspace(min_N, max_N, num_N, dtype=int)
         optimal_omega_values = []
         for N in N_values:
             self.N = N
-            optimal_omega_values.append(self.optimal_omega_binarysearch())
+            optimal_omega_values.append(self.optimal_omega_binarysearch(objects=objects))
         # save in csv N_values and Omega values
-        np.savetxt('../results/N_values.csv', N_values, delimiter=',')
-        np.savetxt('../results/optimal_omega_N.csv', optimal_omega_values, delimiter=',')
-        # N_values = np.loadtxt('../results/N_values.csv', delimiter=',')
-        # optimal_omega_values = np.loadtxt('../results/optimal_omega_N.csv', delimiter=',')
+        if objects:
+            print("Saving results with objects")
+            np.savetxt('../results/N_values_objects.csv', N_values, delimiter=',')
+            np.savetxt('../results/optimal_omega_N_objects.csv', optimal_omega_values, delimiter=',')
+        else:    
+            np.savetxt('../results/N_values.csv', N_values, delimiter=',')
+            np.savetxt('../results/optimal_omega_N.csv', optimal_omega_values, delimiter=',')
+        N_values = np.loadtxt('../results/N_values.csv', delimiter=',')
+        optimal_omega_values = np.loadtxt('../results/optimal_omega_N.csv', delimiter=',')
+        N_values_objects = np.loadtxt('../results/N_values_objects.csv', delimiter=',')
+        optimal_omega_values_objects = np.loadtxt('../results/optimal_omega_N_objects.csv', delimiter=',')
         plt.figure(figsize=(8, 5))
-        plt.plot(N_values, optimal_omega_values, 'o-', color=colors[1])
+        plt.plot(N_values, optimal_omega_values, 'o-', color=colors[1], label = 'No objects')
+        #plt.plot(N_values_objects, optimal_omega_values_objects, 'o-', color=colors[2], label = 'With objects')
         plt.xlabel(r'Intervals ($N$)', fontsize=labelsize+4)
         plt.ylabel(r'Optimal $\omega$', fontsize=labelsize+4)
         plt.xticks(fontsize=ticksize+4)
         plt.yticks(fontsize=ticksize+4)
+        plt.legend(fontsize=ticksize+4)
         plt.tight_layout()
         plt.grid(True)
         plt.savefig('../figures/optimal_omega_N.pdf')
@@ -501,15 +511,15 @@ if __name__ == "__main__":
     ]
 
     diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='Jacobi')
-    # print("Testing against analytical solution...")
-    # try:
-    #     diff.test_2D_simulation()
-    #     print("Test passed! Numerical solution matches analytical solution within tolerance.")
-    # except AssertionError as e:
-        # print("Test failed:", e)
+    print("Testing against analytical solution...")
+    try:
+        diff.test_2D_simulation()
+        print("Test passed! Numerical solution matches analytical solution within tolerance.")
+    except AssertionError as e:
+        print("Test failed:", e)
 
-    diff.plot_all_convergence()
-    diff.plot_omega_N()
+    # diff.plot_all_convergence()
+    # diff.plot_omega_N()
     #diff.optimal_omega_binarysearch()
     #diff.plot_all_concentrations()
 
@@ -539,7 +549,7 @@ if __name__ == "__main__":
             diff.solve()
             diff.plot()
 
-    test_objects()
+    #test_objects()
 
     def test_omega_objects():
         N = 50
@@ -547,9 +557,11 @@ if __name__ == "__main__":
         epsilon = 1e-6
 
         diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='SOR')
+        diff.init_heart()
         # set to true so then adds the heart to the diffusion objects
-        diff.optimal_omega_binarysearch(objects=True)
+        #diff.optimal_omega_binarysearch(objects=True)
+        diff.plot_omega_N(objects=True)
 
-   # test_omega_objects()
+    test_omega_objects()
 
 
