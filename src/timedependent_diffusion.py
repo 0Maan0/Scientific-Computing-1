@@ -141,16 +141,21 @@ class Diffusion:
                        cmap='viridis',
                        aspect='equal',
                        vmin=0, vmax=1)
-        cbar = plt.colorbar(im, label='Concentration (c)')
-        cbar.ax.tick_params(labelsize=ticksize+8)
-        cbar.set_label('Concentration (c)', fontsize=labelsize+8)
-        plt.xlabel('x', fontsize=labelsize+8)
-        plt.ylabel('y', fontsize=labelsize+8)
-        plt.xticks(fontsize=ticksize+8)
-        plt.yticks(fontsize=ticksize+8)
-        plt.title(f't = {self.t:.3f}', fontsize=labelsize+4)
-        plt.savefig(f'./figures/diffusion_t_{self.t:.3f}.pdf', bbox_inches='tight')
-        plt.show()
+        plus = 35
+        cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
+        cbar.set_label('Concentration', fontsize=labelsize+plus)
+        cbar.ax.tick_params(labelsize=ticksize+plus)
+        plt.xlabel('x', fontsize=labelsize+ plus)
+        plt.ylabel('y', fontsize=labelsize+ plus)
+        cbar.ax.tick_params(labelsize=ticksize+plus)
+        cbar.set_label('Concentration (c)', fontsize=labelsize+plus)
+        plt.xlabel('x', fontsize=labelsize+plus)
+        plt.ylabel('y', fontsize=labelsize+plus)
+        plt.xticks(fontsize=ticksize+plus)
+        plt.yticks(fontsize=ticksize+plus)
+        plt.title(f't = {self.t:.3f}', fontsize=labelsize+plus)
+        plt.savefig(f'../figures/diffusion_t_{self.t:.3f}.pdf', bbox_inches='tight')
+        #plt.show()
 
     def animate(self, num_frames=200, interval=100, steps_per_frame=1):
         """Animate the evolution of the system
