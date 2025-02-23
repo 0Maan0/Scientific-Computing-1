@@ -166,12 +166,16 @@ class time_independent_diffusion:
 
             diff_mid = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_mid)
             if objects:
-                diff.init_heart()
+                diff.add_rectangle(0.1, 0.9, 0.2, 0.5)
+                diff.add_rectangle(0.7, 0.9, 0.8, 0.7)
+                diff.add_polygon([(0.4, 0.3), (0.8, 0.5), (0.8, 0.3)])
             iterations_mid = diff_mid.solve()
 
             diff_test = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon, method='SOR', omega=omega_test)
             if objects:
-                diff.init_heart()
+                diff.add_rectangle(0.1, 0.9, 0.2, 0.5)
+                diff.add_rectangle(0.7, 0.9, 0.8, 0.7)
+                diff.add_polygon([(0.4, 0.3), (0.8, 0.5), (0.8, 0.3)])
             iterations_test = diff_test.solve()
 
             if iterations_test < iterations_mid:
@@ -204,7 +208,7 @@ class time_independent_diffusion:
             print("Saving results with objects")
             np.savetxt('../results/N_values_objects.csv', N_values, delimiter=',')
             np.savetxt('../results/optimal_omega_N_objects.csv', optimal_omega_values, delimiter=',')
-        else:    
+        else:
             np.savetxt('../results/N_values.csv', N_values, delimiter=',')
             np.savetxt('../results/optimal_omega_N.csv', optimal_omega_values, delimiter=',')
         N_values = np.loadtxt('../results/N_values.csv', delimiter=',')
@@ -563,5 +567,3 @@ if __name__ == "__main__":
         diff.plot_omega_N(objects=True)
 
     test_omega_objects()
-
-
