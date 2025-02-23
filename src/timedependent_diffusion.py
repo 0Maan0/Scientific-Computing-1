@@ -68,22 +68,22 @@ class Diffusion:
 
         # compare numerical to analytical solution
         np.testing.assert_allclose(self.c, c_analytical,rtol=1, atol=1e-6)
-        
+
     def plot_analytical(self, times=[0.001, 0.01, 0.1, 1.0], n_terms=10):
         """
         Plot analytical solution for different t.
         """
         plt.figure(figsize=(10, 6))
-        
+
         # Line styles for different times
         linestyles = ['-', '--', ':', '-.']
-        
+
         # Fine grid for smooth curves
         y_fine = np.linspace(0, self.L, 200)
-        
+
         for i, t in enumerate(times):
             c_analytical = np.zeros_like(y_fine)
-            
+
             # Calculate analytical solution
             for j, y in enumerate(y_fine):
                 sum_terms = 0
@@ -92,11 +92,11 @@ class Diffusion:
                     term2 = erfc((1 + y + 2 * k) / (2 * np.sqrt(self.D * t)))
                     sum_terms += (term1 - term2)
                 c_analytical[j] = sum_terms
-            
+
             plt.plot(y_fine, c_analytical,
                     linestyle=linestyles[i],
                     label=f'Dt={t:.3f}')
-            
+
         plt.xlabel('c(y)', fontsize=labelsize+4)
         plt.ylabel('Concentration(c)', fontsize=labelsize+4)
         plt.xticks(fontsize=ticksize+4)
@@ -188,7 +188,7 @@ class Diffusion:
 
         anim = FuncAnimation(fig, update, frames=num_frames,
                         interval=interval, blit=False)
-        # anim.save(filename="../figures/timedep_diffusion.mkv", writer="ffmpeg")
+        anim.save(filename="../figures/timedep_diffusion.mkv", writer="ffmpeg")
         plt.show()
         return anim
 
@@ -202,8 +202,8 @@ if __name__ == "__main__":
     dt = 0.0001
 
     diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
-    diff.animate(num_frames=1000, interval=1, steps_per_frame=10)
-    
+    diff.animate(num_frames=2000, interval=10, steps_per_frame=1)
+
     def plot_times():
         fp_tol = 1e-10
         diff = Diffusion(N=N, L=L, dt=dt, D=D, tol=1e-6)
@@ -215,8 +215,8 @@ if __name__ == "__main__":
             diff.step()
             for t in times:
                 if np.isclose(diff.t, t, atol=fp_tol):
-                    diff.plot()    
-    plot_times()
+                    diff.plot()
+    # plot_times()
 
     def test():
         print("Testing against analytical solution...")
@@ -227,7 +227,5 @@ if __name__ == "__main__":
             print("Test failed:", e)
 
     # test()
-    
-    diff.plot_analytical()
 
-
+    # diff.plot_analytical()
