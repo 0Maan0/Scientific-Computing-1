@@ -1,15 +1,25 @@
 '''
-This modulle contains a class for simulating a vibrating string. 
-You can choose between three initial conditions for the string.
+University: University of Amsterdam
+Course: Scientific Computing
+Authors: Margarita Petrova, Maan Scipio, Pjotr Piet
+ID's: 15794717, 15899039, 12714933
+
+Description:
+This module contains a class for simulating the behavior of a vibrating string under different
+initial conditions. It implements a finite difference scheme to solve the wave equation, allowing
+for the simulation of string vibrations with various boundary and initial conditions. The user can
+choose from three initial conditions:
 1. sin(2*pi*x)
 2. sin(5*pi*x)
-3. sin(5*pi*x) if x is between 1/5 and 2/5, 0 otherwise
+3. sin(5*pi*x) if 1/5 < x < 2/5, 0 otherwise
+
+The code also provides functions to animate the strings motion and plot time snapshots of the
+string at various time steps.
 '''
+
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 from matplotlib.animation import FuncAnimation
-from scipy.special import erfc
 import seaborn as sns
 import matplotlib.animation as animation
 
@@ -93,7 +103,6 @@ class String:
         self.ani = animation.FuncAnimation(fig, update, frames=steps, interval=20, repeat=True)
         plt.show()
 
-
     def plot_snapshots(self):
         """Plots multiple time snapshots for each initial condition using seaborn."""
         N = 100
@@ -102,7 +111,7 @@ class String:
         steps_per_snapshot = 300  # Steps before saving a snapshot
         num_snapshots = 5  # Number of times to plot
 
-        fig, axes = plt.subplots(3,1, figsize=(5, 8), sharex=True, gridspec_kw={'wspace': 0})
+        fig, axes = plt.subplots(3, 1, figsize=(5, 8), sharex=True, gridspec_kw={'wspace': 0})
         titles = [r'$\sin(2\pi x)$', r'$\sin(5\pi x)$', r'$\sin(5\pi x)$ if $1/5 < x < 2/5, 0$ otherwise']
 
         for condition in range(1, 4):  # Loop through initial conditions
@@ -112,9 +121,9 @@ class String:
                 for _ in range(steps_per_snapshot):
                     string.step()
                 sns.lineplot(x=string.x, y=string.y, ax=ax, label=f"t={snap * steps_per_snapshot * dt:.1f}s", color=colors[snap])
-            
+
             ax.set_xlabel("x", fontsize=labelsize)
-            
+
             ax.set_ylabel("y", fontsize=labelsize)
             ax.set_title(titles[condition - 1], fontsize=labelsize)
             if condition == 3:
@@ -133,8 +142,7 @@ if __name__ == "__main__":
     L = 1.0
     dt = 0.001
     diff = String(N=N, L=L, dt=dt, initial_condition=2)
-    #diff.simulate(steps=1000)
+    diff.simulate(steps=1000)
 
     # Run the additional snapshot plot
     diff.plot_snapshots()
-

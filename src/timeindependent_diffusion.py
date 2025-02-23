@@ -1,3 +1,17 @@
+"""
+University: University of Amsterdam
+Course: Scientific Computing
+Authors: Margarita Petrova, Maan Scipio, Pjotr Piet
+ID's: 15794717, 15899039, 12714933
+
+Description: Contains implementation for the time independent diffusion equation. The class
+time_independent_diffusion allows for the simulation of the diffusion equation in 2D with different
+boundary conditions and objects that act as sinks. The class provides methods to solve the equation
+using Jacobi, Gauss-Seidel, and Successive Over-Relaxation (SOR) methods. The user can also plot the
+convergence history, optimal omega values, and the concentration distribution at the end of the
+simulation.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -45,8 +59,8 @@ class time_independent_diffusion:
         One Jacobi iteration step.
         """
         c_next = np.copy(self.c)
-        c_next[self.N-1, :] = 1 # top boundary
-        c_next[0, :] = 0 # bottom boundary
+        c_next[self.N-1, :] = 1  # top boundary
+        c_next[0, :] = 0  # bottom boundary
 
         # Vectorized update with wrapping boundary conditions (excluding first and last row)
         c_next[1:-1, :] = 0.25 * (
@@ -79,7 +93,7 @@ class time_independent_diffusion:
             for y in range(1, self.N - 1):  # Skip boundary rows
                 xmin1 = (x - 1) % self.N
                 xplus1 = (x + 1) % self.N
-                self.c[y, x] = 1 / 4 * (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] + \
+                self.c[y, x] = 1 / 4 * (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] +
                                         self.c[y - 1, x])
 
         # maximum change
@@ -107,15 +121,13 @@ class time_independent_diffusion:
 
                 xmin1 = (x - 1) % self.N
                 xplus1 = (x + 1) % self.N
-                self.c[y, x] = self.omega / 4 * (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] + \
-                                        self.c[y - 1, x]) + (1 - self.omega) * self.c[y, x]
-
+                self.c[y, x] = self.omega / 4 * (self.c[y, xplus1] + self.c[y, xmin1] + self.c[y + 1, x] +
+                                                 self.c[y - 1, x]) + (1 - self.omega) * self.c[y, x]
 
         # Calculate maximum change
         delta = np.max(np.abs(self.c - c_old))
 
         return delta
-
 
     def solve(self):
         """
@@ -216,7 +228,7 @@ class time_independent_diffusion:
         N_values_objects = np.loadtxt('../results/N_values_objects.csv', delimiter=',')
         optimal_omega_values_objects = np.loadtxt('../results/optimal_omega_N_objects.csv', delimiter=',')
         plt.figure(figsize=(8, 5))
-        plt.plot(N_values, optimal_omega_values, 'o-', color=colors[1], label = 'No objects')
+        plt.plot(N_values, optimal_omega_values, 'o-', color=colors[1], label='No objects')
         #plt.plot(N_values_objects, optimal_omega_values_objects, 'o-', color=colors[2], label = 'With objects')
         plt.xlabel(r'Intervals ($N$)', fontsize=labelsize+4)
         plt.ylabel(r'Optimal $\omega$', fontsize=labelsize+4)
@@ -233,30 +245,30 @@ class time_independent_diffusion:
         plt.figure(figsize=(8, 8))
 
         im = plt.imshow(self.c,
-                       extent=[0, self.L, 0, self.L],
-                       origin='lower',
-                       cmap='viridis',
-                       aspect='equal',
-                       vmin=0, vmax=1)
+                        extent=[0, self.L, 0, self.L],
+                        origin='lower',
+                        cmap='viridis',
+                        aspect='equal',
+                        vmin=0, vmax=1)
 
         # Overlay objects
         if self.objects.any():
             object_color = 'gray'
             object_array = np.ma.masked_where(self.objects == 0, self.objects)
             plt.imshow(object_array,
-                    extent=[0, self.L, 0, self.L],
-                    origin='lower',
-                    cmap=object_color,
-                    alpha=0.5)
+                       extent=[0, self.L, 0, self.L],
+                       origin='lower',
+                       cmap=object_color,
+                       alpha=0.5)
         plus = 4
         cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
         cbar.set_label('Concentration', fontsize=labelsize+plus)
         cbar.ax.tick_params(labelsize=ticksize+plus)
-        plt.xlabel('x', fontsize=labelsize+ plus)
-        plt.ylabel('y', fontsize=labelsize+ plus)
-        #plt.title(f'Steady State Concentration Distribution ({self.method})', fontsize=titlesize)
-        plt.yticks(fontsize=ticksize+ plus)
-        plt.xticks(fontsize=ticksize+ plus)
+        plt.xlabel('x', fontsize=labelsize + plus)
+        plt.ylabel('y', fontsize=labelsize + plus)
+        # plt.title(f'Steady State Concentration Distribution ({self.method})', fontsize=titlesize)
+        plt.yticks(fontsize=ticksize + plus)
+        plt.xticks(fontsize=ticksize + plus)
         plt.tight_layout()
         plt.savefig('../figures/concentration_distribution.pdf')
         plt.show()
@@ -281,15 +293,15 @@ class time_independent_diffusion:
         Plot the convergence history (delta vs iterations) for all methods.
         """
         plt.plot(figsize=(8, 8))
-        omega_values = [1.0, 1.0, 1.7, 1.8, 1.92] # add more indicative values?
+        omega_values = [1.0, 1.0, 1.7, 1.8, 1.92]  # add more indicative values?
 
-        for i, method in enumerate(['Jacobi', 'Gauss-Seidel','SOR', 'SOR', 'SOR']):
+        for i, method in enumerate(['Jacobi', 'Gauss-Seidel', 'SOR', 'SOR', 'SOR']):
             omega_temp = omega_values[i]
             diff = time_independent_diffusion(N=self.N, L=self.L, epsilon=self.epsilon,
                                               method=method, omega=omega_temp)
             diff.solve()
             plt.semilogy(diff.delta_history, label=rf"{method} ($\omega$ = {omega_temp})", color=colors[i])
-        #plt.title(f'Convergence of different Methods', fontsize=titlesize)
+        # plt.title(f'Convergence of different Methods', fontsize=titlesize)
         plt.xlabel(r'Iterations ($k$)', fontsize=labelsize)
         plt.ylabel(r'Maximum Change $\delta$ (log scale)', fontsize=labelsize)
         plt.grid(True)
@@ -306,7 +318,7 @@ class time_independent_diffusion:
         diff.solve()
         c_analytical = diff.y
         for x in range(self.N):
-            cx = diff.c[:,x]
+            cx = diff.c[:, x]
             np.testing.assert_allclose(cx, c_analytical, rtol=1e-2)
         print
 
@@ -443,7 +455,6 @@ class time_independent_diffusion:
                 if (x - x0) ** 2 + (y - y0) ** 2 <= r ** 2 and y >= y0:
                     self.objects[y, x] = 1  # Fill the semicircle
 
-
     def init_objects(self):
         """
         Initialize some random objects in the system domain.
@@ -501,7 +512,7 @@ class time_independent_diffusion:
 
 
 if __name__ == "__main__":
- # Example usage with stable parameters
+    # Example usage with stable parameters
     N = 50
     L = 1.0
     epsilon = 1e-6
@@ -522,48 +533,12 @@ if __name__ == "__main__":
     except AssertionError as e:
         print("Test failed:", e)
 
-    # diff.plot_all_convergence()
-    # diff.plot_omega_N()
-    #diff.optimal_omega_binarysearch()
-    #diff.plot_all_concentrations()
-
-    # for method, omega in methods:
-    #     print(f"\nSolving with {method.upper()} method:")
-    #     diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon,
-    #                                       method=method, omega=omega)
-    #     diff.solve()
-    #     diff.plot()
-    #     diff.plot_convergence()
-
-    def test_objects():
-        N = 200
-        L = 1.0
-        epsilon = 1e-6
-
-        methods = [
-            ('SOR', 1.92),
-        ]
-
-        for method, omega in methods:
-            print(f"\nSolving with {method.upper()} method:")
-            diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon,
-                                            method=method, omega=omega)
-            diff.init_heart()
-
-            diff.solve()
-            diff.plot()
-
-    #test_objects()
-
     def test_omega_objects():
         N = 50
         L = 1.0
         epsilon = 1e-6
 
         diff = time_independent_diffusion(N=N, L=L, epsilon=epsilon, method='SOR')
-        diff.init_heart()
-        # set to true so then adds the heart to the diffusion objects
-        #diff.optimal_omega_binarysearch(objects=True)
         diff.plot_omega_N(objects=True)
 
     test_omega_objects()

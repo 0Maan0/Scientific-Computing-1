@@ -1,6 +1,17 @@
+"""
+University: University of Amsterdam
+Course: Scientific Computing
+Authors: Margarita Petrova, Maan Scipio, Pjotr Piet
+ID's: 15794717, 15899039, 12714933
+
+Description: This file contains implementation of time dependent 2d diffusion equation. The class
+Diffusion is used to simulate the diffusion of a concentration field in a 2D space. The class
+provides methods to animate the evolution of the system, plot the current state of the system, and
+compare the numerical solution with the analytical solution at specified time steps.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 from matplotlib.animation import FuncAnimation
 from scipy.special import erfc
 import seaborn as sns
@@ -13,6 +24,7 @@ titlesize = 16
 labelsize = 20
 colors = sns.color_palette("Set2", 8)
 ticksize = 18
+
 
 # 1.2 The Time Dependent Diffusion Equation
 class Diffusion:
@@ -67,7 +79,7 @@ class Diffusion:
             np.testing.assert_allclose(c_analytical, expected_linear, rtol=1, atol=1e-6)
 
         # compare numerical to analytical solution
-        np.testing.assert_allclose(self.c, c_analytical,rtol=1, atol=1e-6)
+        np.testing.assert_allclose(self.c, c_analytical, rtol=1, atol=1e-6)
 
     def plot_analytical(self, times=[0.001, 0.01, 0.1, 1.0], n_terms=10):
         """
@@ -94,8 +106,8 @@ class Diffusion:
                 c_analytical[j] = sum_terms
 
             plt.plot(y_fine, c_analytical,
-                    linestyle=linestyles[i],
-                    label=f'Dt={t:.3f}')
+                     linestyle=linestyles[i],
+                     label=f'Dt={t:.3f}')
 
         plt.xlabel('c(y)', fontsize=labelsize+4)
         plt.ylabel('Concentration(c)', fontsize=labelsize+4)
@@ -123,7 +135,7 @@ class Diffusion:
                 xmin1 = (x - 1) % self.N
                 xplus1 = (x + 1) % self.N
                 c_next[y, x] = self.c[y, x] + self.dt * self.D / self.dx ** 2 * \
-                    (self.c[y, xplus1] + self.c[y, xmin1] + \
+                    (self.c[y, xplus1] + self.c[y, xmin1] +
                      self.c[y + 1, x] + self.c[y - 1, x] - 4 * self.c[y, x])
 
         # Update array, time and check boundaries
@@ -136,17 +148,17 @@ class Diffusion:
         """Plot the current state of the system as a 2D color map"""
         plt.figure(figsize=(8, 8))
         im = plt.imshow(self.c,
-                       extent=[0, self.L, 0, self.L],
-                       origin='lower',
-                       cmap='viridis',
-                       aspect='equal',
-                       vmin=0, vmax=1)
+                        extent=[0, self.L, 0, self.L],
+                        origin='lower',
+                        cmap='viridis',
+                        aspect='equal',
+                        vmin=0, vmax=1)
         plus = 35
         cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
         cbar.set_label('Concentration', fontsize=labelsize+plus)
         cbar.ax.tick_params(labelsize=ticksize+plus)
-        plt.xlabel('x', fontsize=labelsize+ plus)
-        plt.ylabel('y', fontsize=labelsize+ plus)
+        plt.xlabel('x', fontsize=labelsize + plus)
+        plt.ylabel('y', fontsize=labelsize + plus)
         cbar.ax.tick_params(labelsize=ticksize+plus)
         cbar.set_label('Concentration (c)', fontsize=labelsize+plus)
         plt.xlabel('x', fontsize=labelsize+plus)
@@ -155,7 +167,6 @@ class Diffusion:
         plt.yticks(fontsize=ticksize+plus)
         plt.title(f't = {self.t:.3f}', fontsize=labelsize+plus)
         plt.savefig(f'../figures/diffusion_t_{self.t:.3f}.pdf', bbox_inches='tight')
-        #plt.show()
 
     def animate(self, num_frames=200, interval=100, steps_per_frame=1):
         """Animate the evolution of the system
@@ -166,11 +177,11 @@ class Diffusion:
         """
         fig, ax = plt.subplots(figsize=(8, 8))
         im = ax.imshow(self.c,
-                    extent=[0, self.L, 0, self.L],
-                    origin='lower',
-                    cmap='viridis',
-                    aspect='equal',
-                    vmin=0, vmax=1)
+                       extent=[0, self.L, 0, self.L],
+                       origin='lower',
+                       cmap='viridis',
+                       aspect='equal',
+                       vmin=0, vmax=1)
         # size of text colorbar
         plt.colorbar(im, label='Concentration')
         ax.set_xlabel('x', fontsize=labelsize)
@@ -192,7 +203,7 @@ class Diffusion:
             return [im]
 
         anim = FuncAnimation(fig, update, frames=num_frames,
-                        interval=interval, blit=False)
+                             interval=interval, blit=False)
         anim.save(filename="../figures/timedep_diffusion.mkv", writer="ffmpeg")
         plt.show()
         return anim
@@ -256,7 +267,7 @@ class Diffusion:
         plt.subplots_adjust(top=0.9)  # Increase the top margin for title visibility
 
         # Set the title
-        plt.title(f"Comparison of Numerical and Analytical Solutions", fontsize=labelsize+6)
+        plt.title("Comparison of Numerical and Analytical Solutions")
 
         # Show the plot
         plt.show()
@@ -297,4 +308,3 @@ if __name__ == "__main__":
             print("Test failed:", e)
 
     # test()
-
